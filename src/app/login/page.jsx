@@ -2,14 +2,12 @@
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -17,14 +15,25 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      // Better Auth-এর অফিশিয়াল নিয়মে signIn এবং onSuccess হ্যান্ডেল করা
       await authClient.signIn.email({
         email,
         password,
-        callbackURL: "/", 
+      }, {
+        onSuccess: (ctx) => {
+          console.log("Login Success Hook:", ctx);
+          // লগইন সফল হলে সেশন কুকি নিশ্চিত করে সরাসরি /home পেজে নিয়ে যাবে
+          window.location.href = "/home";
+        },
+        onError: (ctx) => {
+          console.error("Login Error Hook:", ctx);
+          setError(ctx.error.message || "Invalid email or password.");
+        }
       });
-      router.push("/");
+      
     } catch (err) {
-      setError(err.message || "Invalid email or password.");
+      console.error("Unexpected Login Error:", err);
+      setError("An unexpected error occurred.");
     } finally {
       setLoading(false);
     }

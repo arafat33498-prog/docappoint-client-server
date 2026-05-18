@@ -16,7 +16,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // Better Auth-এর অফিশিয়াল অবজেক্ট স্ট্রাকচার ফলো করে কলব্যাক অপশন ব্যবহার করা হলো
+    
       await authClient.signUp.email({
         email,
         password,
@@ -24,12 +24,12 @@ export default function RegisterPage() {
       }, {
         onSuccess: (ctx) => {
           console.log("Registration Success Hook:", ctx);
-          // সেশন কুকি ব্রাউজারে সেটআপ নিশ্চিত করে সরাসরি /home পেজে হার্ড রিডাইরেক্ট করবে
+         
           window.location.href = "/home";
         },
         onError: (ctx) => {
           console.error("Registration Error Hook:", ctx);
-          // Better Auth থেকে আসা নিখুঁত এরর মেসেজটি ইউজারকে দেখাবে
+         
           setError(ctx.error.message || "Something went wrong. Please try again.");
         }
       });
