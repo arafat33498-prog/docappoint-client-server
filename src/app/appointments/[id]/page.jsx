@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { authClient } from "@/lib/auth-client"; // 🚀 ১. Better-Auth ক্লায়েন্ট ইম্পোর্ট করলাম
 
 const DoctorDetails = () => {
   const { id } = useParams(); 
@@ -10,14 +11,16 @@ const DoctorDetails = () => {
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
 
-
   const [patientName, setPatientName] = useState("");
   const [phone, setPhone] = useState("");
   const [appointmentDate, setAppointmentDate] = useState("");
   const [timeSlot, setTimeSlot] = useState("05:00 PM");
   const [problem, setProblem] = useState("");
 
- 
+  // 🚀 ২. সেশন থেকে লগইন করা ইউজারের ইমেইল বের করলাম
+  const { data: session } = authClient.useSession();
+  const userEmail = session?.user?.email;
+
   useEffect(() => {
     if (!id) return;
 
@@ -36,9 +39,15 @@ const DoctorDetails = () => {
       });
   }, [id]);
 
- 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
+    
+    // 🔒 ইউজার লগইন না থাকলে বুকিং করতে দেবে না
+    if (!userEmail) {
+      alert("Please log in first to book an appointment!");
+      return;
+    }
+
     setBookingLoading(true);
 
     const bookingData = {
@@ -51,7 +60,8 @@ const DoctorDetails = () => {
       appointmentDate,
       timeSlot,
       problem,
-      status: "Pending" 
+      status: "Pending",
+      email: userEmail // 🚀 ৩. ডাটাবেজে আপনার ইমেইলটি ট্যাগ করে দেওয়া হলো
     };
 
     try {
@@ -64,7 +74,7 @@ const DoctorDetails = () => {
       if (res.ok) {
         alert(`Successfully booked appointment with ${doctor.name}!`);
         document.getElementById("booking_modal").close(); 
-        router.push('/dashboard'); 
+        router.push('/dashboard/my-appointments'); // 🔄 সরাসরি মাই-অ্যাপয়েন্টমেন্ট পেজে রিডাইরেক্ট করবে
       } else {
         alert("Something went wrong. Please try again.");
       }
@@ -98,10 +108,8 @@ const DoctorDetails = () => {
     <main className="bg-[#f4f7f6] min-h-screen py-12 px-4">
       <div className="max-w-4xl mx-auto w-full">
         
-        
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 md:p-8 flex flex-col md:flex-row gap-8 mb-8">
           
-         
           <div className="w-full md:w-64 h-64 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0">
             <img 
               src={doctor.image || "https://via.placeholder.com/300"} 
@@ -110,7 +118,6 @@ const DoctorDetails = () => {
             />
           </div>
 
-          
           <div className="flex-1 flex flex-col justify-between">
             <div>
               <span className="bg-sky-50 text-sky-600 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
@@ -121,7 +128,6 @@ const DoctorDetails = () => {
               
               <hr className="border-slate-100 my-5" />
 
-              
               <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm mb-6">
                 <div>
                   <p className="text-slate-400 text-xs font-medium">Experience</p>
@@ -142,7 +148,6 @@ const DoctorDetails = () => {
               </div>
             </div>
 
-           
             <button 
               onClick={() => document.getElementById("booking_modal").showModal()}
               className="w-full bg-sky-500 hover:bg-sky-600 text-white font-medium py-3.5 rounded-xl transition shadow-lg shadow-sky-100/50 flex justify-center items-center gap-2"
@@ -152,7 +157,6 @@ const DoctorDetails = () => {
           </div>
         </div>
 
-       
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 md:p-8">
           <h3 className="text-lg font-bold text-slate-900 mb-3">About This Medical Specialist</h3>
           <p className="text-slate-500 text-sm leading-relaxed">
@@ -160,7 +164,6 @@ const DoctorDetails = () => {
           </p>
         </div>
 
-        
         <dialog id="booking_modal" className="modal modal-bottom sm:modal-middle">
           <div className="modal-box bg-white max-w-lg rounded-3xl p-6 md:p-8 border border-slate-100 text-slate-800 shadow-2xl">
             <h3 className="font-bold text-2xl text-slate-900 mb-1">Confirm Appointment</h3>
@@ -177,7 +180,6 @@ const DoctorDetails = () => {
                 />
               </div>
 
-             
               <div className="form-control">
                 <label className="label text-xs font-semibold text-slate-500 tracking-wider">PHONE NUMBER</label>
                 <input 
@@ -188,7 +190,6 @@ const DoctorDetails = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-            
                 <div className="form-control">
                   <label className="label text-xs font-semibold text-slate-500 tracking-wider">SELECT DATE</label>
                   <input 
@@ -198,7 +199,6 @@ const DoctorDetails = () => {
                   />
                 </div>
 
-               
                 <div className="form-control">
                   <label className="label text-xs font-semibold text-slate-500 tracking-wider">TIME SLOT</label>
                   <select 
@@ -213,7 +213,6 @@ const DoctorDetails = () => {
                 </div>
               </div>
 
-              
               <div className="form-control">
                 <label className="label text-xs font-semibold text-slate-500 tracking-wider">BRIEF DESCRIPTION OF SYMPTOMS</label>
                 <textarea 
@@ -223,7 +222,6 @@ const DoctorDetails = () => {
                 ></textarea>
               </div>
 
-              
               <div className="modal-action flex justify-end gap-3 pt-4">
                 <button 
                   type="button" 

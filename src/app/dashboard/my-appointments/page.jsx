@@ -1,25 +1,30 @@
 "use client";
 import React, { useEffect, useState } from 'react';
+import { authClient } from "@/lib/auth-client";
 
 const MyAppointments = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const { data: session, isPending: sessionLoading } = authClient.useSession();
+  const userEmail = session?.user?.email;
 
   useEffect(() => {
-    fetch("http://localhost:5000/bookings")
+    if (!userEmail) return;
+
+    fetch(`http://localhost:5000/bookings?email=${userEmail}`)
       .then((res) => res.json())
       .then((data) => {
         setBookings(data);
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Error fetching bookings:", err);
+        console.error("Error fetching user appointments:", err);
         setLoading(false);
       });
-  }, []);
+  }, [userEmail]);
 
-  if (loading) {
+  if (sessionLoading || (userEmail && loading)) {
     return (
       <div className="flex justify-center items-center min-h-[50vh]">
         <span className="loading loading-spinner loading-lg text-slate-700"></span>
@@ -27,78 +32,49 @@ const MyAppointments = () => {
     );
   }
 
-  return (
-    <div className="space-y-6">
-     
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">My Appointments</h1>
-        <p className="text-sm text-slate-400 mt-1">View and track the status of your booked medical consultations.</p>
-      </div>
+  if (!userEmail) {
+    return <div className="text-center py-10 text-red-500 font-medium">Please log in to view your appointments.</div>;
+  }
 
-    
-      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+  return (
+    <div className="p-6 max-w-6xl mx-auto space-y-6">
+      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+        <h2 className="text-xl font-bold text-slate-900 mb-4">My Booked Appointments</h2>
+        
         {bookings.length === 0 ? (
-          <div className="text-center py-12 text-slate-400 font-medium">
-            No appointments booked yet!
+          <div className="text-center py-12 text-slate-400 font-medium bg-slate-50 rounded-xl border border-dashed border-slate-200">
+            ❌ No appointments booked yet for {userEmail}!
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="table w-full border-collapse text-left">
-             
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-xs font-bold tracking-wider uppercase">
-                  <th className="py-4 px-6">Doctor Details</th>
-                  <th className="py-4 px-6">Patient Name</th>
-                  <th className="py-4 px-6">Date & Time</th>
-                  <th className="py-4 px-6">Fee</th>
-                  <th className="py-4 px-6 text-center">Status</th>
+          <div className="overflow-x-auto rounded-xl border border-slate-100">
+            <table className="table w-full bg-white">
+              <thead className="bg-slate-50 text-slate-700">
+                <tr>
+                  <th>#</th>
+                  <th>Patient Name</th>
+                  <th>Doctor Name</th>
+                  <th>Date</th>
+                  <th>Time Slot</th>
+                  <th>Status</th>
                 </tr>
               </thead>
-              
-              
-              <tbody className="divide-y divide-slate-50 text-sm text-slate-700">
-                {bookings.map((booking) => (
-                  <tr key={booking._id || booking.id} className="hover:bg-slate-50/50 transition-colors">
-                    
-                    
-                    <td className="py-4 px-6">
-                      <div>
-                        <p className="font-bold text-slate-900">{booking.doctorName}</p>
-                        <p className="text-xs text-slate-400 font-medium mt-0.5">{booking.specialty}</p>
-                      </div>
-                    </td>
-                    
-                    
-                    <td className="py-4 px-6 font-medium text-slate-600">
-                      {booking.patientName}
-                    </td>
-                    
-                   
-                    <td className="py-4 px-6">
-                      <div>
-                        <p className="font-medium text-slate-800">{booking.appointmentDate}</p>
-                        <p className="text-xs text-slate-400 font-medium mt-0.5">⏱️ {booking.timeSlot}</p>
-                      </div>
-                    </td>
-                    
-                   
-                    <td className="py-4 px-6 font-bold text-slate-900">
-                      ৳ {booking.fee}
-                    </td>
-                    
-                    
-                    <td className="py-4 px-6 text-center">
-                      <span className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${
-                        booking.status === "Approved" 
-                          ? "bg-emerald-50 text-emerald-600" 
-                          : booking.status === "Rejected"
-                          ? "bg-rose-50 text-rose-600"
-                          : "bg-amber-50 text-amber-600"
+              <tbody className="text-slate-600">
+                {bookings.map((booking, index) => (
+                  <tr key={booking._id || index} className="hover:bg-slate-50/50">
+                    <th>{index + 1}</th>
+                    <td className="font-medium text-slate-900">{booking.patientName || "N/A"}</td>
+                    <td>{booking.doctorName || "General Physician"}</td>
+                    <td>{booking.appointmentDate || "N/A"}</td>
+                    <td><span className="badge badge-ghost text-xs">{booking.timeSlot || booking.appointmentTime || "N/A"}</span></td>
+                    <td>
+                      <span className={`badge text-xs font-semibold px-2.5 py-1 ${
+                        booking.status?.toLowerCase() === 'approved' || booking.status?.toLowerCase() === 'completed'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                          : 'bg-amber-50 text-amber-700 border-amber-200'
                       }`}>
-                        {booking.status || "Pending"}
+                        {booking.status || 'Pending'}
                       </span>
                     </td>
-
                   </tr>
                 ))}
               </tbody>

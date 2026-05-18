@@ -9,9 +9,8 @@ export default function DashboardLayout({ children }) {
   
  const menuItems = [
     { name: "Overview", path: "/dashboard", icon: "📊" },
-    { name: "My Appointments", path: "/dashboard/my-appointments", icon: "📅" },
-    { name: "Admin Panel", path: "/dashboard/admin-bookings", icon: "⚙️" }, // 🚀 নতুন অ্যাডমিন লিঙ্ক
-    { name: "Profile", path: "/dashboard/profile", icon: "👤" },
+    { name: "My Bookings", path: "/dashboard/my-appointments", icon: "📅" }, // রিকোয়ারমেন্ট অনুযায়ী নাম "My Bookings"
+    { name: "My Profile", path: "/dashboard/profile", icon: "👤" },
   ];
 
   return (
