@@ -7,9 +7,10 @@ export default function DashboardLayout({ children }) {
   const pathname = usePathname();
 
   
-  const menuItems = [
+ const menuItems = [
     { name: "Overview", path: "/dashboard", icon: "📊" },
     { name: "My Appointments", path: "/dashboard/my-appointments", icon: "📅" },
+    { name: "Admin Panel", path: "/dashboard/admin-bookings", icon: "⚙️" }, // 🚀 নতুন অ্যাডমিন লিঙ্ক
     { name: "Profile", path: "/dashboard/profile", icon: "👤" },
   ];
 
