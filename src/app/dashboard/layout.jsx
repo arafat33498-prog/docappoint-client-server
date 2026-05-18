@@ -8,11 +8,10 @@ export default function DashboardLayout({ children }) {
 
   
  const menuItems = [
-    { name: "Overview", path: "/dashboard", icon: "📊" },
-    { name: "My Bookings", path: "/dashboard/my-appointments", icon: "📅" }, // রিকোয়ারমেন্ট অনুযায়ী নাম "My Bookings"
-    { name: "My Profile", path: "/dashboard/profile", icon: "👤" },
-  ];
-
+  { name: "Overview", path: "/dashboard", icon: "📊" },
+  { name: "My Bookings", path: "/dashboard/my-appointments", icon: "📅" }, 
+  { name: "My Profile", path: "/dashboard/my-profile", icon: "👤" }, // 👈 এখানে profile এর জায়গায় my-profile করে দেওয়া হলো
+];
   return (
     <div className="flex bg-[#f4f7f6] min-h-screen text-slate-800">
       

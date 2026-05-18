@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { authClient } from "@/lib/auth-client"; // 🚀 ১. Better-Auth ক্লায়েন্ট ইম্পোর্ট করলাম
+import { authClient } from "@/lib/auth-client"; 
 
 const DoctorDetails = () => {
   const { id } = useParams(); 
@@ -16,8 +16,12 @@ const DoctorDetails = () => {
   const [appointmentDate, setAppointmentDate] = useState("");
   const [timeSlot, setTimeSlot] = useState("05:00 PM");
   const [problem, setProblem] = useState("");
+  const [gender, setGender] = useState("Male"); 
 
-  // 🚀 ২. সেশন থেকে লগইন করা ইউজারের ইমেইল বের করলাম
+ 
+  const [alertMessage, setAlertMessage] = useState({ type: "", text: "" });
+
+  
   const { data: session } = authClient.useSession();
   const userEmail = session?.user?.email;
 
@@ -42,26 +46,29 @@ const DoctorDetails = () => {
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
     
-    // 🔒 ইউজার লগইন না থাকলে বুকিং করতে দেবে না
     if (!userEmail) {
-      alert("Please log in first to book an appointment!");
+      setAlertMessage({ type: "error", text: "Please log in first to book an appointment!" });
       return;
     }
 
     setBookingLoading(true);
+    setAlertMessage({ type: "", text: "" }); 
 
+    
     const bookingData = {
-      doctorId: doctor._id || doctor.id,
+      userEmail: userEmail, // 
       doctorName: doctor.name,
+      doctorId: doctor._id || doctor.id,
       specialty: doctor.specialty,
       fee: doctor.fee,
       patientName,
+      gender, 
       phone,
       appointmentDate,
-      timeSlot,
+      appointmentTime: timeSlot, 
+      timeSlot, 
       problem,
-      status: "Pending",
-      email: userEmail // 🚀 ৩. ডাটাবেজে আপনার ইমেইলটি ট্যাগ করে দেওয়া হলো
+      status: "Pending" 
     };
 
     try {
@@ -72,14 +79,27 @@ const DoctorDetails = () => {
       });
 
       if (res.ok) {
-        alert(`Successfully booked appointment with ${doctor.name}!`);
-        document.getElementById("booking_modal").close(); 
-        router.push('/dashboard/my-appointments'); // 🔄 সরাসরি মাই-অ্যাপয়েন্টমেন্ট পেজে রিডাইরেক্ট করবে
+        setAlertMessage({ type: "success", text: "Appointment booked successfully!" });
+        
+       
+        setPatientName("");
+        setPhone("");
+        setAppointmentDate("");
+        setProblem("");
+
+       
+        setTimeout(() => {
+          document.getElementById("booking_modal").close(); 
+          setAlertMessage({ type: "", text: "" });
+          router.push('/dashboard/my-appointments'); 
+        }, 2000);
+
       } else {
-        alert("Something went wrong. Please try again.");
+        setAlertMessage({ type: "error", text: "Something went wrong. Please try again." });
       }
     } catch (error) {
       console.error("Booking Error:", error);
+      setAlertMessage({ type: "error", text: "Server connection failed. Try again later." });
     } finally {
       setBookingLoading(false);
     }
@@ -105,9 +125,19 @@ const DoctorDetails = () => {
   }
 
   return (
-    <main className="bg-[#f4f7f6] min-h-screen py-12 px-4">
+    <main className="bg-[#f4f7f6] min-h-screen py-12 px-4 relative">
       <div className="max-w-4xl mx-auto w-full">
         
+        {alertMessage.text && (
+          <div className="toast toast-top toast-center z-50">
+            <div className={`alert ${alertMessage.type === "success" ? "alert-success text-white" : "alert-error text-white"} shadow-lg rounded-2xl`}>
+              <div>
+                <span>{alertMessage.text}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 md:p-8 flex flex-col md:flex-row gap-8 mb-8">
           
           <div className="w-full md:w-64 h-64 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0">
@@ -180,13 +210,27 @@ const DoctorDetails = () => {
                 />
               </div>
 
-              <div className="form-control">
-                <label className="label text-xs font-semibold text-slate-500 tracking-wider">PHONE NUMBER</label>
-                <input 
-                  type="tel" required placeholder="Enter contact number" 
-                  className="input input-bordered w-full bg-[#f4f7f6] border-slate-200 text-slate-800 focus:outline-none focus:border-sky-400 rounded-xl"
-                  value={phone} onChange={(e) => setPhone(e.target.value)}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="form-control">
+                  <label className="label text-xs font-semibold text-slate-500 tracking-wider">PHONE NUMBER</label>
+                  <input 
+                    type="tel" required placeholder="Enter contact number" 
+                    className="input input-bordered w-full bg-[#f4f7f6] border-slate-200 text-slate-800 focus:outline-none focus:border-sky-400 rounded-xl"
+                    value={phone} onChange={(e) => setPhone(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-control">
+                  <label className="label text-xs font-semibold text-slate-500 tracking-wider">GENDER</label>
+                  <select 
+                    className="select select-bordered w-full bg-[#f4f7f6] border-slate-200 text-slate-800 focus:outline-none focus:border-sky-400 rounded-xl"
+                    value={gender} onChange={(e) => setGender(e.target.value)}
+                  >
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
