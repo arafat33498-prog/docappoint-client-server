@@ -15,14 +15,14 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // Better Auth-এর অফিশিয়াল নিয়মে signIn এবং onSuccess হ্যান্ডেল করা
+     
       await authClient.signIn.email({
         email,
         password,
       }, {
         onSuccess: (ctx) => {
           console.log("Login Success Hook:", ctx);
-          // লগইন সফল হলে সেশন কুকি নিশ্চিত করে সরাসরি /home পেজে নিয়ে যাবে
+         
           window.location.href = "/home";
         },
         onError: (ctx) => {
