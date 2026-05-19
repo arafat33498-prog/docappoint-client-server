@@ -8,7 +8,6 @@ const AllAppointments = () => {
   const [filteredDoctors, setFilteredDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("");
 
@@ -26,18 +25,15 @@ const AllAppointments = () => {
       });
   }, []);
 
- 
   useEffect(() => {
     let result = [...doctors];
 
-   
     if (searchQuery) {
       result = result.filter((doctor) =>
         doctor.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
-    
     if (sortBy === "lowToHigh") {
       result.sort((a, b) => a.fee - b.fee);
     } else if (sortBy === "highToLow") {
@@ -50,7 +46,7 @@ const AllAppointments = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-[#f4f7f6]">
-        <span className="loading loading-spinner loading-lg text-slate-700"></span>
+        <span className="loading loading-spinner loading-lg text-sky-500"></span>
       </div>
     );
   }
@@ -58,7 +54,6 @@ const AllAppointments = () => {
   return (
     <section className="bg-[#f4f7f6] min-h-screen py-16 px-4">
       <div className="max-w-7xl mx-auto w-full">
-        
         
         <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">
@@ -69,24 +64,43 @@ const AllAppointments = () => {
           </p>
         </div>
 
-       
-        <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-10">
+        {/* ফিল্টার এবং সার্চ কন্ট্রোলার সেকশন */}
+        <div className="flex flex-col md:flex-row gap-6 justify-between items-center bg-white p-6 rounded-3xl shadow-[0_15px_40px_-20px_rgba(0,0,0,0.05)] border border-slate-100 mb-10">
           
-        
-          <div className="relative w-full md:max-w-md">
-            <input
-              type="text"
-              placeholder="Search by Doctor Name..."
-              className="input input-bordered w-full bg-[#f4f7f6] border-slate-200 text-slate-800 focus:outline-none focus:border-slate-400 pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <span className="absolute left-3 top-3.5 text-slate-400">🔍</span>
+          {/* ✨ 📱 আকাশী থিমের লাক্সারি গ্রেডিয়েন্ট বর্ডার সার্চ বার */}
+          <div className="relative w-full md:max-w-lg p-[2px] rounded-full bg-gradient-to-r from-sky-400 via-blue-500 to-cyan-400 shadow-sm transition-all duration-300 focus-within:shadow-md">
+            <div className="flex items-center bg-white rounded-full px-5 py-3 w-full">
+              
+              {/* 🔍 আকাশী টোনের সার্চ আইকন */}
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                strokeWidth={2.5} 
+                stroke="currentColor" 
+                className="w-5 h-5 text-sky-500"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.602 10.602z" />
+              </svg>
+
+              {/* 📏 মাঝখানের চিকন ডিভাইডার লাইন */}
+              <div className="h-5 w-[1px] bg-slate-200 mx-3.5" />
+
+              {/* ⌨️ ইনপুট ফিল্ড */}
+              <input
+                type="text"
+                placeholder="Search for a doctor..."
+                className="w-full bg-transparent border-none outline-none text-slate-700 font-medium placeholder-slate-400 text-base"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
           </div>
 
+          {/* 📊 সর্ট ড্রপডাউন (বর্ডার ফোকাস কালারও ম্যাচ করা হয়েছে) */}
           <div className="w-full md:w-auto">
             <select 
-              className="select select-bordered w-full md:w-56 bg-[#f4f7f6] border-slate-200 text-slate-700 focus:outline-none"
+              className="select select-bordered w-full md:w-60 bg-[#f4f7f6] border-slate-200 text-slate-700 font-medium rounded-2xl focus:outline-none focus:border-sky-400 transition-all"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
             >
@@ -98,7 +112,7 @@ const AllAppointments = () => {
 
         </div>
 
-       
+        {/*カード গ্রিড এরিয়া */}
         {filteredDoctors.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredDoctors.map((doctor) => (
@@ -106,7 +120,6 @@ const AllAppointments = () => {
             ))}
           </div>
         ) : (
-         
           <div className="text-center py-20 bg-white rounded-3xl shadow-sm border border-slate-100">
             <p className="text-xl font-medium text-slate-400">
               No doctors found with the name "{searchQuery}"
