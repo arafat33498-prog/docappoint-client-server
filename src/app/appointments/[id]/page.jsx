@@ -1,282 +1,119 @@
 "use client";
-
-import React, { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
-const DoctorDetails = () => {
-  const { id } = useParams();
+export default function DoctorDetails({ doctor }) {
   const router = useRouter();
-
-  const [doctor, setDoctor] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [bookingLoading, setBookingLoading] = useState(false);
-
-  const [patientName, setPatientName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [loading, setLoading] = useState(false);
   const [appointmentDate, setAppointmentDate] = useState("");
-  const [timeSlot, setTimeSlot] = useState("05:00 PM");
-  const [problem, setProblem] = useState("");
-  const [gender, setGender] = useState("Male");
+  const [timeSlot, setTimeSlot] = useState("");
 
-  const [alertMessage, setAlertMessage] = useState({
-    type: "",
-    text: ""
-  });
-
+  // 🔄 বুকিং এর জন্য কারেন্ট লগইন থাকা ইউজারের ডাটা নিয়ে আসা
   const { data: session } = authClient.useSession();
-  const userEmail = session?.user?.email;
 
-  const API_URL =
-    "https://docappoint-server-ewq6.onrender.com";
+  // 🛡️ সেফটি গার্ড: ডক্টর ডাটা লোড না হওয়া পর্যন্ত পেজ ক্র্যাশ করা থেকে আটকাবে
+  if (!doctor) {
+    return (
+      <div className="min-h-[400px] flex flex-col items-center justify-center bg-gray-50">
+        <span className="loading loading-spinner loading-lg text-sky-500"></span>
+        <p className="mt-2 text-sm font-bold text-slate-500">Loading Doctor Details...</p>
+      </div>
+    );
+  }
 
-  useEffect(() => {
-    if (!id) return;
-
-    fetch(`${API_URL}/doctors/${id}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Doctor not found");
-        return res.json();
-      })
-      .then((data) => {
-        setDoctor(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching doctor details:", err);
-        setLoading(false);
-      });
-  }, [id]);
-
-  const handleBookingSubmit = async (e) => {
+  const handleBooking = async (e) => {
     e.preventDefault();
-
-    if (!userEmail) {
-      setAlertMessage({
-        type: "error",
-        text: "Please log in first to book an appointment!"
-      });
+    
+    // 🛡️ ইউজার লগইন না থাকলে বুক করতে দেবে না, লগইন পেজে পাঠাবে
+    if (!session) {
+      router.push(`/login?redirect=/doctors/${doctor._id}`);
       return;
     }
 
-    setBookingLoading(true);
-
-    setAlertMessage({
-      type: "",
-      text: ""
-    });
+    setLoading(true);
 
     const bookingData = {
-      userEmail: userEmail,
       doctorName: doctor.name,
-      doctorId: doctor._id || doctor.id,
+      doctorId: doctor._id,
       specialty: doctor.specialty,
       fee: doctor.fee,
-      patientName,
-      gender,
-      phone,
+      patientName: session.user.name,      // logged in user name
+      userEmail: session.user.email,       // logged in user email (Crucial Fix)
       appointmentDate,
-      appointmentTime: timeSlot,
       timeSlot,
-      problem,
-      status: "Pending"
+      status: "Pending",
     };
 
     try {
-      const res = await fetch(`${API_URL}/bookings`, {
+      // আপনার রেন্ডার সার্ভারের URL ব্যবহার করা হয়েছে
+      const res = await fetch("https://docappoint-server-ewq6.onrender.com/bookings", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(bookingData)
+        body: JSON.stringify(bookingData),
       });
 
-      if (res.ok) {
-        setAlertMessage({
-          type: "success",
-          text: "Appointment booked successfully!"
-        });
+      const data = await res.json();
 
-        setPatientName("");
-        setPhone("");
-        setAppointmentDate("");
-        setProblem("");
-
-        setTimeout(() => {
-          document
-            .getElementById("booking_modal")
-            .close();
-
-          setAlertMessage({
-            type: "",
-            text: ""
-          });
-
-          router.push("/dashboard/my-appointments");
-
-        }, 2000);
-
+      if (data.success) {
+        alert("Appointment Booked Successfully! 🎉");
+        router.push("/dashboard"); // বুকিং সফল হলে ড্যাশবোর্ড বা হোম পেজে নিয়ে যাবে
       } else {
-        setAlertMessage({
-          type: "error",
-          text: "Something went wrong. Please try again."
-        });
+        alert("Failed to book appointment. Please try again.");
       }
-
     } catch (error) {
       console.error("Booking Error:", error);
-
-      setAlertMessage({
-        type: "error",
-        text: "Server connection failed. Try again later."
-      });
-
+      alert("Something went wrong!");
     } finally {
-      setBookingLoading(false);
+      setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-[#f4f7f6]">
-        <span className="loading loading-spinner loading-lg text-slate-700"></span>
-      </div>
-    );
-  }
-
-  if (!doctor) {
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-[#f4f7f6] text-slate-500">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">
-            Doctor Not Found!
-          </h2>
-
-          <button
-            onClick={() =>
-              router.push("/appointments")
-            }
-            className="text-sky-500 hover:underline"
-          >
-            Go Back to Appointments
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <main className="bg-[#f4f7f6] min-h-screen py-12 px-4 relative">
-      <div className="max-w-4xl mx-auto w-full">
-
-        {alertMessage.text && (
-          <div className="toast toast-top toast-center z-50">
-            <div
-              className={`alert ${
-                alertMessage.type === "success"
-                  ? "alert-success text-white"
-                  : "alert-error text-white"
-              } shadow-lg rounded-2xl`}
-            >
-              <div>
-                <span>{alertMessage.text}</span>
-              </div>
-            </div>
+    <div className="max-w-4xl mx-auto p-6">
+      {/* ডক্টর ডিটেইলস কার্ড এখানে থাকবে */}
+      
+      {/* 📅 Book Now Form Section */}
+      <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mt-8">
+        <h3 className="text-xl font-bold mb-4">Book an Appointment</h3>
+        
+        {!session ? (
+          <div className="text-center p-4 bg-amber-50 rounded-xl text-amber-700 font-medium">
+            Please <span className="underline cursor-pointer font-bold text-sky-500" onClick={() => router.push(`/login?redirect=/doctors/${doctor._id}`)}>Login</span> first to book an appointment.
           </div>
-        )}
-
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 md:p-8 flex flex-col md:flex-row gap-8">
-
-          <div className="w-full md:w-64 h-64 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0">
-            <img
-              src={
-                doctor.image ||
-                "https://via.placeholder.com/300"
-              }
-              alt={doctor.name}
-              className="w-full h-full object-cover object-top"
-            />
-          </div>
-
-          <div className="flex-1 flex flex-col justify-between">
+        ) : (
+          <form onSubmit={handleBooking} className="space-y-4">
             <div>
-              <span className="bg-sky-50 text-sky-600 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                {doctor.specialty}
-              </span>
-
-              <h1 className="text-3xl font-bold text-slate-900 mt-3 mb-1">
-                {doctor.name}
-              </h1>
-
-              <p className="text-slate-400 font-medium text-sm">
-                📍{" "}
-                {doctor.hospital ||
-                  doctor.location ||
-                  "Medical Center"}
-              </p>
-
-              <hr className="border-slate-100 my-5" />
-
-              <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm mb-6">
-
-                <div>
-                  <p className="text-slate-400 text-xs font-medium">
-                    Experience
-                  </p>
-
-                  <p className="font-semibold text-slate-700 mt-0.5">
-                    💼 {doctor.experience || "N/A"}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-slate-400 text-xs font-medium">
-                    Rating
-                  </p>
-
-                  <p className="font-semibold text-slate-700 mt-0.5">
-                    ⭐ 4.9 (98 Reviews)
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-slate-400 text-xs font-medium">
-                    Availability
-                  </p>
-
-                  <p className="font-semibold text-emerald-600 mt-0.5">
-                    📅 Sun - Thu (5PM - 9PM)
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-slate-400 text-xs font-medium">
-                    Consultation Fee
-                  </p>
-
-                  <p className="font-bold text-sky-500 text-xl mt-0.5">
-                    ৳ {doctor.fee}
-                  </p>
-                </div>
-
-              </div>
+              <label className="label font-semibold text-xs text-slate-600">Select Date</label>
+              <input 
+                type="date" required className="input input-bordered w-full rounded-xl"
+                value={appointmentDate} onChange={(e) => setAppointmentDate(e.target.value)}
+              />
             </div>
 
-            <button
-              onClick={() =>
-                document
-                  .getElementById("booking_modal")
-                  .showModal()
-              }
-              className="w-full bg-sky-500 hover:bg-sky-600 text-white font-medium py-3.5 rounded-xl transition shadow-lg shadow-sky-100/50 flex justify-center items-center gap-2"
-            >
-              Book Appointment Now
-            </button>
-          </div>
-        </div>
-      </div>
-    </main>
-  );
-};
+            <div>
+              <label className="label font-semibold text-xs text-slate-600">Select Time Slot</label>
+              <select 
+                required className="select select-bordered w-full rounded-xl"
+                value={timeSlot} onChange={(e) => setTimeSlot(e.target.value)}
+              >
+                <option value="">Choose a slot</option>
+                <option value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</option>
+                <option value="05:00 PM - 06:00 PM">05:00 PM - 06:00 PM</option>
+              </select>
+            </div>
 
-export default DoctorDetails;
+            <button 
+              type="submit" disabled={loading}
+              className="btn bg-slate-950 text-white w-full rounded-xl hover:bg-slate-900 mt-4"
+            >
+              {loading ? <span className="loading loading-spinner loading-sm"></span> : "Confirm Booking"}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
