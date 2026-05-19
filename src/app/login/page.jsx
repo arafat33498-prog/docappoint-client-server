@@ -12,10 +12,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [redirectUrl, setRedirectUrl] = useState("/");
 
-  // 🔄 Better Auth সেশন স্টেট চেক
   const { data: session, isPending } = authClient.useSession();
 
-  // ইউআরএল থেকে প্রটেক্টেড পেজের লিংক ট্র্যাক করা
   useEffect(() => {
     if (typeof window !== "undefined") {
       const searchParams = new URLSearchParams(window.location.search);
@@ -24,7 +22,6 @@ export default function LoginPage() {
     }
   }, []);
 
-  // 🛡️ ইউজার অলরেডি লগইন থাকলে তাকে রিডাইরেক্ট করতে হবে
   useEffect(() => {
     if (!isPending && session) {
       router.push(redirectUrl);
@@ -34,8 +31,7 @@ export default function LoginPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
-    loading(true); // fix loading state triggering safely
-    setLoading(true);
+    setLoading(true); // ✅ ক্র্যাশ এররটি এখানে ফিক্স করা হয়েছে
 
     try {
       await authClient.signIn.email({
@@ -44,7 +40,6 @@ export default function LoginPage() {
       }, {
         onSuccess: (ctx) => {
           console.log("Login Success Hook:", ctx);
-          // সফল লগইন হলে ফুল রিফ্রেশ দিয়ে হোমে বা আগের পেজে নিয়ে যাবে
           window.location.href = redirectUrl;
         },
         onError: (ctx) => {
@@ -61,7 +56,6 @@ export default function LoginPage() {
     }
   };
 
-  // ⏳ ডাটা বা সেশন চেক হওয়ার সময় লোডিং স্পিনার
   if (isPending) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#f0f4f8]">
@@ -77,7 +71,6 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#f0f4f8] px-4 py-10 font-sans text-slate-800 tracking-tight">
       <div className="w-full max-w-[390px] bg-white rounded-[45px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden border border-slate-200 flex flex-col justify-between min-h-[730px] relative">
         
-        {/* টপ আকাশী কালার সেকশন */}
         <div className="bg-sky-400 pt-14 pb-24 px-8 relative flex flex-col items-center justify-center">
           <div className="w-14 h-14 bg-white rounded-2xl shadow-md flex items-center justify-center z-10 mb-2">
             <svg viewBox="0 0 24 24" className="w-8 h-8 text-slate-950 fill-current">
@@ -92,7 +85,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* ফর্ম এরিয়া */}
         <div className="px-8 pb-10 pt-2 flex-1 flex flex-col justify-between">
           <div>
             <h2 className="text-3xl font-extrabold text-center text-slate-900 tracking-normal mb-6">Login</h2>
@@ -104,7 +96,6 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {/* Email Input */}
               <div className="bg-white rounded-xl p-2.5 px-4 border-2 border-slate-400 focus-within:border-sky-500 transition-all">
                 <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-0.5">Email Address</label>
                 <input 
@@ -114,7 +105,6 @@ export default function LoginPage() {
                 />
               </div>
 
-              {/* Password Input */}
               <div className="bg-white rounded-xl p-2.5 px-4 border-2 border-slate-400 focus-within:border-sky-500 transition-all">
                 <div className="flex justify-between items-center mb-0.5">
                   <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700">Password</label>
