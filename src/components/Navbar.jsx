@@ -8,14 +8,16 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname(); 
 
-  // 🔄 useSession থেকে refetch ফাংশনটি নিয়ে আসা হয়েছে
+  // ⚠️ ফিক্স: useSession থেকে refetch-কে অবজেক্টের ভেতরে নিয়ে আসা হয়েছে
   const { data: session, isPending, refetch } = authClient.useSession();
   const user = session?.user; 
 
   // 🔄 ইউজার যখনই কোনো পেজ চেঞ্জ করবে (যেমন: লগইন বা রেজিস্ট্রেশন এর পর), 
-  // তখনই ব্যাকগ্রাউন্ডে সেশন স্টেটটি রিফ্রেশ হবে যেন নেভবার সাথে সাথে আপডেট হয়।
+  // তখনই ব্যাকগ্রাউন্ডে সেশন স্টেটটি রিফ্রেশ হবে যেন নেভবার সাথে সাথে আপডেট হয়।
   useEffect(() => {
-    refetch();
+    if (refetch) {
+      refetch();
+    }
   }, [pathname, refetch]);
 
   const handleLogout = async () => {
@@ -97,7 +99,7 @@ export default function Navbar() {
               </div>
               <button 
                 onClick={handleLogout}
-                className="text-sm px-5 py-2 rounded-full border border-rose-500 text-rose-500 hover:bg-rose-50 transition-all font-medium"
+                className="text-sm px-5 py-2 rounded-full border border-rose-500 text-rose-500 hover:bg-rose-50 transition-all font-medium cursor-pointer"
               >
                 Logout
               </button>
