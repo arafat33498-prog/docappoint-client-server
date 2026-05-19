@@ -10,10 +10,21 @@ const DashboardOverview = () => {
   const userEmail = session?.user?.email;
 
   useEffect(() => {
-    if (!userEmail) return;
+    // 🎯 লাইভ API লিঙ্ক এবং credentials: "include" যোগ করা হয়েছে
+    if (!userEmail) {
+        setLoading(false);
+        return;
+    }
 
-    fetch(`http://localhost:5000/bookings?email=${userEmail}`)
-      .then((res) => res.json())
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings?email=${userEmail}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include", // এটি ছাড়া সেশন কুকি ব্যাকএন্ডে যাবে না
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch dashboard data");
+        return res.json();
+      })
       .then((data) => {
         setBookings(data);
         setLoading(false);

@@ -19,7 +19,11 @@ export default function DoctorDetails() {
 
   useEffect(() => {
     if (!doctorId) return;
-    fetch(`${API_URL}/doctors/${doctorId}`)
+    
+    // 🎯 ডাটা ফেচ করার সময়ও ক্রেডেনশিয়াল পাঠানো ভালো অভ্যাস
+    fetch(`${API_URL}/doctors/${doctorId}`, {
+      credentials: "include" 
+    })
       .then((res) => res.json())
       .then((data) => {
         setDoctor(data);
@@ -53,11 +57,14 @@ export default function DoctorDetails() {
     };
 
     try {
+      // 🎯 এখানে credentials: "include" যোগ করা হয়েছে, এটি ছাড়া বুকিং কাজ করবে না
       const res = await fetch(`${API_URL}/bookings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(bookingData),
+        credentials: "include", 
       });
+      
       const data = await res.json();
 
       if (data.success || res.ok) {
@@ -97,7 +104,7 @@ export default function DoctorDetails() {
           <p className="text-sm font-bold text-slate-700 mt-2">Consultation Fee: {doctor.fee || "500 BDT"}</p>
         </div>
       </div>
-       
+        
       <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mt-8">
         <h3 className="text-xl font-bold mb-4 text-slate-800">Book an Appointment</h3>
         {!session ? (

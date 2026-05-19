@@ -18,32 +18,41 @@ const MyAppointments = () => {
   const { data: session, isPending: sessionLoading } = authClient.useSession();
   const userEmail = session?.user?.email;
 
+  // সেশন বা ইমেইল থাকলে ডাটা ফেচ করো
   useEffect(() => {
-    if (!userEmail) return;
+    if (!userEmail) {
+      setLoading(false);
+      return;
+    }
 
-    // 🎯 ফিক্স: লাইভ ব্যাকএন্ড লিংক থেকে বুকিং ডাটা ফেচ করা হচ্ছে
-    fetch(`https://docappoint-server-ewq6.onrender.com/bookings?email=${userEmail}`)
-      .then((res) => {
+    const fetchBookings = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings?email=${userEmail}`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include", // 🎯 কুকি/সেশন পাঠানোর জন্য এটি বাধ্যতামূলক
+        });
+        
         if (!res.ok) throw new Error("Failed to fetch bookings");
-        return res.json();
-      })
-      .then((data) => {
+        const data = await res.json();
         setBookings(data);
-        setLoading(false);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error("Error fetching user appointments:", err);
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    fetchBookings();
   }, [userEmail]);
 
   const handleDeleteBooking = async (id) => {
     if (!confirm("Are you sure you want to delete this appointment?")) return;
 
     try {
-      // 🎯 ফিক্স: লাইভ এপিআই দিয়ে ডিলিট রিকোয়েস্ট
-      const res = await fetch(`https://docappoint-server-ewq6.onrender.com/bookings/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings/${id}`, {
         method: "DELETE",
+        credentials: "include", // 🎯 এটিও যোগ করা হয়েছে
       });
 
       if (res.ok) {
@@ -83,11 +92,11 @@ const MyAppointments = () => {
     };
 
     try {
-      // 🎯 ফিক্স: লাইভ এপিআই দিয়ে পুট (আপডেট) রিকোয়েস্ট
-      const res = await fetch(`https://docappoint-server-ewq6.onrender.com/bookings/${selectedBooking._id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings/${selectedBooking._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedBookingData),
+        credentials: "include", // 🎯 আপডেট রিকোয়েস্টেও এটি যোগ করা হয়েছে
       });
 
       if (res.ok) {
@@ -127,7 +136,7 @@ const MyAppointments = () => {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6 text-slate-800">
-      
+      {/* Toast Message */}
       {toastMessage.text && (
         <div className="toast toast-top toast-center z-50">
           <div className={`alert ${toastMessage.type === "success" ? "alert-success text-white" : "alert-error text-white"} shadow-lg rounded-2xl`}>
@@ -144,7 +153,7 @@ const MyAppointments = () => {
         
         {bookings.length === 0 ? (
           <div className="text-center py-12 text-slate-400 font-medium bg-slate-50 rounded-xl border border-dashed border-slate-200">
-            ❌ No appointments booked yet for {userEmail}!
+            ❌ No appointments booked yet!
           </div>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-slate-100">
@@ -153,14 +162,14 @@ const MyAppointments = () => {
                 <tr>
                   <th>#</th>
                   <th>Patient Info</th>
-                  <th>Doctor Name</th>
+                  <th>Doctor</th>
                   <th>Date</th>
                   <th>Time Slot</th>
                   <th>Status</th>
                   <th className="text-right pr-6">Actions</th>
                 </tr>
               </thead>
-              <tbody className="text-slate-600">
+              <tbody>
                 {bookings.map((booking, index) => (
                   <tr key={booking._id || index} className="hover:bg-slate-50/50 transition-colors">
                     <th>{index + 1}</th>
@@ -181,18 +190,8 @@ const MyAppointments = () => {
                       </span>
                     </td>
                     <td className="text-right pr-6 space-x-2">
-                      <button 
-                        onClick={() => openUpdateModal(booking)}
-                        className="btn btn-xs bg-sky-50 hover:bg-sky-100 border-none text-sky-600 rounded-lg px-3 py-1 normal-case h-auto"
-                      >
-                        Update
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteBooking(booking._id)}
-                        className="btn btn-xs bg-rose-50 hover:bg-rose-100 border-none text-rose-600 rounded-lg px-3 py-1 normal-case h-auto"
-                      >
-                        Delete
-                      </button>
+                      <button onClick={() => openUpdateModal(booking)} className="btn btn-xs bg-sky-50 hover:bg-sky-100 border-none text-sky-600 rounded-lg px-3 py-1 h-auto">Update</button>
+                      <button onClick={() => handleDeleteBooking(booking._id)} className="btn btn-xs bg-rose-50 hover:bg-rose-100 border-none text-rose-600 rounded-lg px-3 py-1 h-auto">Delete</button>
                     </td>
                   </tr>
                 ))}
@@ -202,109 +201,43 @@ const MyAppointments = () => {
         )}
       </div>
 
-      {/* আপডেট মডেল */}
+      {/* Update Modal */}
       <dialog id="update_appointment_modal" className="modal modal-bottom sm:modal-middle">
         <div className="modal-box bg-white max-w-md rounded-2xl p-6 border border-slate-100 text-slate-800 shadow-xl">
           <h3 className="font-bold text-xl text-slate-900 mb-1">Update Appointment</h3>
-          <p className="text-xs text-slate-400 mb-4">Edit existing patient and schedule details.</p>
-          
           {selectedBooking && (
             <form onSubmit={handleUpdateSubmit} className="space-y-4">
               <div className="form-control">
-                <label className="label text-xs font-bold text-slate-400">DOCTOR NAME (READ-ONLY)</label>
-                <input 
-                  type="text" readOnly disabled
-                  className="input input-sm input-bordered w-full bg-slate-50 border-slate-200 text-slate-400 rounded-lg cursor-not-allowed"
-                  value={selectedBooking.doctorName || "General Physician"}
-                />
+                <label className="label text-xs font-bold text-slate-400">DOCTOR NAME</label>
+                <input type="text" readOnly disabled className="input input-sm input-bordered w-full bg-slate-50 text-slate-400 rounded-lg" value={selectedBooking.doctorName || "General Physician"} />
               </div>
-              <div className="form-control">
-                <label className="label text-xs font-bold text-slate-400">YOUR EMAIL (READ-ONLY)</label>
-                <input 
-                  type="text" readOnly disabled
-                  className="input input-sm input-bordered w-full bg-slate-50 border-slate-200 text-slate-400 rounded-lg cursor-not-allowed"
-                  value={selectedBooking.userEmail || userEmail}
-                />
-              </div>
-
               <div className="form-control">
                 <label className="label text-xs font-bold text-slate-500">PATIENT NAME</label>
-                <input 
-                  type="text" required 
-                  className="input input-sm input-bordered w-full bg-slate-50 border-slate-200 text-slate-800 focus:outline-none focus:border-sky-400 rounded-lg"
-                  value={editPatientName} onChange={(e) => setEditPatientName(e.target.value)}
-                />
+                <input type="text" required className="input input-sm input-bordered w-full rounded-lg" value={editPatientName} onChange={(e) => setEditPatientName(e.target.value)} />
               </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div className="form-control">
                   <label className="label text-xs font-bold text-slate-500">PHONE NUMBER</label>
-                  <input 
-                    type="tel" required 
-                    className="input input-sm input-bordered w-full bg-slate-50 border-slate-200 text-slate-800 focus:outline-none focus:border-sky-400 rounded-lg"
-                    value={editPhone} onChange={(e) => setEditPhone(e.target.value)}
-                  />
+                  <input type="tel" required className="input input-sm input-bordered w-full rounded-lg" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
                 </div>
                 <div className="form-control">
                   <label className="label text-xs font-bold text-slate-500">GENDER</label>
-                  <select 
-                    className="select select-sm select-bordered w-full bg-slate-50 border-slate-200 text-slate-800 focus:outline-none focus:border-sky-400 rounded-lg"
-                    value={editGender} onChange={(e) => setEditGender(e.target.value)}
-                  >
+                  <select className="select select-sm select-bordered w-full rounded-lg" value={editGender} onChange={(e) => setEditGender(e.target.value)}>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
-                    <option value="Other">Other</option>
                   </select>
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="form-control">
-                  <label className="label text-xs font-bold text-slate-500">APPOINTMENT DATE</label>
-                  <input 
-                    type="date" required 
-                    className="input input-sm input-bordered w-full bg-slate-50 border-slate-200 text-slate-800 focus:outline-none focus:border-sky-400 rounded-lg"
-                    value={editDate} onChange={(e) => setEditDate(e.target.value)}
-                  />
-                </div>
-                <div className="form-control">
-                  <label className="label text-xs font-bold text-slate-500">TIME SLOT</label>
-                  <select 
-                    className="select select-sm select-bordered w-full bg-slate-50 border-slate-200 text-slate-800 focus:outline-none focus:border-sky-400 rounded-lg"
-                    value={editTime} onChange={(e) => setEditTime(e.target.value)}
-                  >
-                    <option value="10:00 AM">10:00 AM</option>
-                    <option value="10:30 AM">10:30 AM</option>
-                    <option value="11:00 AM">11:00 AM</option>
-                    <option value="02:00 PM">02:00 PM</option>
-                    <option value="03:30 PM">03:30 PM</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="modal-action pt-2">
-                <button 
-                  type="button" 
-                  onClick={() => document.getElementById("update_appointment_modal").close()}
-                  className="btn btn-sm btn-ghost rounded-xl normal-case"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  disabled={actionLoading}
-                  className="btn btn-sm bg-slate-950 text-white hover:bg-slate-900 rounded-xl px-5 border-none normal-case shadow-sm"
-                >
-                  {actionLoading ? <span className="loading loading-spinner loading-xs"></span> : "Save Changes"}
-                </button>
+              <div className="modal-action">
+                <button type="button" onClick={() => document.getElementById("update_appointment_modal").close()} className="btn btn-sm btn-ghost">Cancel</button>
+                <button type="submit" disabled={actionLoading} className="btn btn-sm bg-slate-950 text-white rounded-xl px-5">{actionLoading ? "..." : "Save Changes"}</button>
               </div>
             </form>
           )}
         </div>
       </dialog>
-
     </div>
   );
 };
 
-export default MyAppointments; 
+export default MyAppointments;
