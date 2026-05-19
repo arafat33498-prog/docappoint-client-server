@@ -14,6 +14,7 @@ export default function LoginPage() {
 
   const { data: session, isPending } = authClient.useSession();
 
+  // 🎯 URL থেকে রিডাইরেক্ট পাথ নেওয়া
   useEffect(() => {
     if (typeof window !== "undefined") {
       const searchParams = new URLSearchParams(window.location.search);
@@ -22,16 +23,17 @@ export default function LoginPage() {
     }
   }, []);
 
+  // 🔄 ইউজার যদি অলরেডি লগইন থাকে, তবে তাকে রিডাইরেক্ট করা
   useEffect(() => {
     if (!isPending && session) {
-      router.push(redirectUrl);
+      window.location.href = redirectUrl; // ✅ হার্ড রিফ্রেশ রিডাইরেকশন (নেভবার ইনস্ট্যান্ট আপডেট নিশ্চিত করবে)
     }
-  }, [session, isPending, redirectUrl, router]);
+  }, [session, isPending, redirectUrl]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
-    setLoading(true); // ✅ ক্র্যাশ এররটি এখানে ফিক্স করা হয়েছে
+    setLoading(true);
 
     try {
       await authClient.signIn.email({
@@ -40,22 +42,24 @@ export default function LoginPage() {
       }, {
         onSuccess: (ctx) => {
           console.log("Login Success Hook:", ctx);
-          window.location.href = redirectUrl;
+          // ✅ সেশন আপডেট নিশ্চিত করতে হার্ড রিফ্রেশ রিডাইরেক্ট
+          window.location.href = redirectUrl; 
         },
         onError: (ctx) => {
           console.error("Login Error Hook:", ctx);
           setError(ctx.error.message || "Invalid email or password.");
+          setLoading(false); // Hook এর ভেতরেও ফলব্যাক হিসেবে সেফটি লোডিং ফলস
         }
       });
       
     } catch (err) {
       console.error("Unexpected Login Error:", err);
       setError("An unexpected error occurred.");
-    } finally {
       setLoading(false);
     }
   };
 
+  // ⏳ সেশন চেকিং স্টেট
   if (isPending) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#f0f4f8]">
@@ -71,6 +75,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#f0f4f8] px-4 py-10 font-sans text-slate-800 tracking-tight">
       <div className="w-full max-w-[390px] bg-white rounded-[45px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden border border-slate-200 flex flex-col justify-between min-h-[730px] relative">
         
+        {/* টপ ব্যানার এরিয়া */}
         <div className="bg-sky-400 pt-14 pb-24 px-8 relative flex flex-col items-center justify-center">
           <div className="w-14 h-14 bg-white rounded-2xl shadow-md flex items-center justify-center z-10 mb-2">
             <svg viewBox="0 0 24 24" className="w-8 h-8 text-slate-950 fill-current">
@@ -85,6 +90,7 @@ export default function LoginPage() {
           </div>
         </div>
 
+        {/* ফর্ম এরিয়া */}
         <div className="px-8 pb-10 pt-2 flex-1 flex flex-col justify-between">
           <div>
             <h2 className="text-3xl font-extrabold text-center text-slate-900 tracking-normal mb-6">Login</h2>
@@ -96,32 +102,42 @@ export default function LoginPage() {
                 </div>
               )}
 
+              {/* ইমেইল ইনপুট */}
               <div className="bg-white rounded-xl p-2.5 px-4 border-2 border-slate-400 focus-within:border-sky-500 transition-all">
                 <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-0.5">Email Address</label>
                 <input 
-                  type="email" placeholder="name@example.com" 
-                  className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder-slate-400/70" required 
-                  value={email} onChange={(e) => setEmail(e.target.value)}
+                  type="email" 
+                  placeholder="name@example.com" 
+                  className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder-slate-400/70" 
+                  required 
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
 
+              {/* পাসওয়ার্ড ইনপুট */}
               <div className="bg-white rounded-xl p-2.5 px-4 border-2 border-slate-400 focus-within:border-sky-500 transition-all">
                 <div className="flex justify-between items-center mb-0.5">
                   <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700">Password</label>
                   <Link href="#" className="text-[10px] font-bold text-sky-500 hover:underline">Forgot Password?</Link>
                 </div>
                 <input 
-                  type="password" placeholder="••••••••" 
-                  className="w-full bg-transparent text-sm font-bold tracking-widest text-slate-900 outline-none placeholder-slate-400/70" required 
-                  value={password} onChange={(e) => setPassword(e.target.value)}
+                  type="password" 
+                  placeholder="••••••••" 
+                  // 🎯 ফিক্স: শুধু ভ্যালু থাকলে টাইপিং এর সময় ডটগুলো বড় দেখানোর জন্য tracking-widest হবে
+                  className={`w-full bg-transparent text-sm font-bold text-slate-900 outline-none placeholder-slate-400/70 placeholder:tracking-normal ${password ? 'tracking-widest' : 'tracking-normal'}`} 
+                  required 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
 
+              {/* সাবমিট বাটন */}
               <div className="pt-2">
                 <button 
                   type="submit" 
                   disabled={loading}
-                  className="w-full py-3.5 bg-slate-950 text-white rounded-xl font-bold tracking-wide text-sm shadow-md active:scale-[0.98] transition-all hover:bg-slate-900 flex justify-center items-center"
+                  className="w-full py-3.5 bg-slate-950 text-white rounded-xl font-bold tracking-wide text-sm shadow-md active:scale-[0.98] transition-all hover:bg-slate-900 flex justify-center items-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {loading ? <span className="loading loading-spinner loading-sm text-white"></span> : "Sign In"}
                 </button>

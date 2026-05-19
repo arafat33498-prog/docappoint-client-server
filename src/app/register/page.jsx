@@ -21,12 +21,12 @@ export default function RegisterPage() {
   const hasLowercase = /[a-z]/.test(password);
   const isLongEnough = password.length >= 6;
 
-  // 🛡️ ইউজার অলরেডি লগইন থাকলে হোমে পাঠিয়ে দেওয়া হবে
+  // 🛡️ ইউজার অলরেডি লগইন থাকলে হোমে পাঠিয়ে দেওয়া হবে (ইনস্ট্যান্ট আপডেট নিশ্চিত করতে href)
   useEffect(() => {
     if (!isPending && session) {
-      router.push("/");
+      window.location.href = "/";
     }
-  }, [session, isPending, router]);
+  }, [session, isPending]);
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -45,11 +45,12 @@ export default function RegisterPage() {
         email,
         password,
         name,
-        image: photoUrl,
+        image: photoUrl || undefined, // ছবি না দিলে যেন ডাটাবেজে নাল বা আনডিফাইনড যায়
       });
 
       if (signUpError) {
         setError(signUpError.message || "Registration failed.");
+        setLoading(false); // ✅ বাটন লোডিং রিলিজ করার ফিক্স
         return;
       }
 
@@ -61,6 +62,7 @@ export default function RegisterPage() {
 
       if (signInError) {
         setError(signInError.message || "Login failed.");
+        setLoading(false); // ✅ বাটন লোডিং রিলিজ করার ফিক্স
         return;
       }
 
@@ -68,8 +70,8 @@ export default function RegisterPage() {
       window.location.href = "/";
 
     } catch (err) {
+      console.error("Unexpected Register Error:", err);
       setError("An unexpected error occurred.");
-    } finally {
       setLoading(false);
     }
   };
@@ -133,12 +135,12 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* Photo URL */}
+            {/* Photo URL (UX সহজ করতে required বাদ দেওয়া হয়েছে) */}
             <div className="bg-white rounded-xl p-2.5 px-4 border-2 border-slate-400 focus-within:border-sky-500 transition-all">
-              <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-0.5">Avatar URL</label>
+              <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-0.5">Avatar URL (Optional)</label>
               <input 
                 type="url" placeholder="https://example.com/photo.jpg" 
-                className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder-slate-400/70" required 
+                className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder-slate-400/70" 
                 value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)}
               />
             </div>
@@ -148,7 +150,9 @@ export default function RegisterPage() {
               <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-0.5">Password</label>
               <input 
                 type="password" placeholder="••••••••" 
-                className="w-full bg-transparent text-sm font-bold tracking-widest text-slate-900 outline-none placeholder-slate-400/70" required 
+                // 🎯 ফিক্স: টাইপ করার সময় ডটগুলো সুন্দর দেখাবে, কিন্তু প্লেসহোল্ডার ঠিক থাকবে
+                className={`w-full bg-transparent text-sm font-bold text-slate-900 outline-none placeholder-slate-400/70 placeholder:tracking-normal ${password ? 'tracking-widest' : 'tracking-normal'}`} 
+                required 
                 value={password} onChange={(e) => setPassword(e.target.value)}
               />
             </div>
@@ -166,11 +170,12 @@ export default function RegisterPage() {
               </p>
             </div>
 
+            {/* সাবমিট বাটন */}
             <div className="pt-2">
               <button 
                 type="submit" 
                 disabled={loading}
-                className="w-full py-3.5 bg-slate-950 text-white rounded-xl font-bold tracking-wide text-sm shadow-md active:scale-[0.98] transition-all hover:bg-slate-900 flex justify-center items-center"
+                className="w-full py-3.5 bg-slate-950 text-white rounded-xl font-bold tracking-wide text-sm shadow-md active:scale-[0.98] transition-all hover:bg-slate-900 flex justify-center items-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {loading ? <span className="loading loading-spinner loading-sm text-white"></span> : "Sign Up"}
               </button>
