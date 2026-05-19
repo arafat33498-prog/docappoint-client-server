@@ -18,8 +18,9 @@ export default function LoginPage() {
   // 🔄 get redirect url safely
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      setRedirectUrl(params.get("redirect") || "/");
+      const searchParams = new URLSearchParams(window.location.search);
+      const from = searchParams.get("redirect") || "/";
+      setRedirectUrl(from);
     }
   }, []);
 
@@ -43,7 +44,7 @@ export default function LoginPage() {
         },
         {
           onSuccess: () => {
-            // ✅ SAFE redirect (no reload bug)
+            // ❌ FIX: no window.location.href (this caused bug)
             router.replace(redirectUrl);
           },
           onError: (ctx) => {
@@ -58,61 +59,87 @@ export default function LoginPage() {
     }
   };
 
-  // ⏳ loading session check
+  // ⏳ session loading
   if (isPending) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        Checking Session...
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#f0f4f8]">
+        <span className="loading loading-spinner loading-lg text-sky-500"></span>
+        <p className="mt-2 text-sm font-bold text-slate-500">
+          Checking Session...
+        </p>
       </div>
     );
   }
 
+  // if already logged in
+  if (session) {
+    router.replace(redirectUrl);
+    return null;
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="w-full max-w-sm p-6 bg-white rounded-xl shadow">
+    <div className="min-h-screen flex items-center justify-center bg-[#f0f4f8] px-4 py-10 font-sans text-slate-800 tracking-tight">
 
-        <h2 className="text-xl font-bold mb-4">Login</h2>
+      {/* 📱 Card */}
+      <div className="w-full max-w-[390px] bg-white rounded-[45px] shadow border border-slate-200 overflow-hidden">
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        {/* Header */}
+        <div className="bg-sky-400 pt-14 pb-24 px-8 relative flex flex-col items-center">
+          <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-md mb-2">
+            🔐
+          </div>
 
-          <input
-            type="email"
-            placeholder="Email"
-            className="w-full border p-2 rounded"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+          <h2 className="text-3xl font-extrabold text-white">Login</h2>
 
-          <input
-            type="password"
-            placeholder="Password"
-            className="w-full border p-2 rounded"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          <svg viewBox="0 0 500 150" className="absolute bottom-0 w-full h-[65px]">
+            <path d="M0.00,49.98 C150.00,150.00 349.20,-50.00 500.00,49.98 L500.00,150.00 L0.00,150.00 Z" fill="#ffffff"></path>
+          </svg>
+        </div>
 
-          {error && (
-            <p className="text-red-500 text-sm">{error}</p>
-          )}
+        {/* Form */}
+        <div className="px-8 pb-10 pt-4">
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-black text-white p-2 rounded"
-          >
-            {loading ? "Loading..." : "Sign In"}
-          </button>
-        </form>
+          <form onSubmit={handleLogin} className="space-y-4">
 
-        <p className="text-sm mt-4 text-center">
-          Don't have account?{" "}
-          <Link href="/register" className="text-blue-500">
-            Register
-          </Link>
-        </p>
+            {error && (
+              <div className="text-red-500 text-sm">{error}</div>
+            )}
 
+            <input
+              type="email"
+              placeholder="Email"
+              className="w-full border p-2 rounded"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+
+            <input
+              type="password"
+              placeholder="Password"
+              className="w-full border p-2 rounded"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-black text-white p-2 rounded"
+            >
+              {loading ? "Loading..." : "Sign In"}
+            </button>
+          </form>
+
+          <p className="text-center text-sm mt-4">
+            Don't have account?{" "}
+            <Link href="/register" className="text-blue-500">
+              Create Account
+            </Link>
+          </p>
+
+        </div>
       </div>
     </div>
   );
