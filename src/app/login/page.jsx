@@ -24,7 +24,7 @@ export default function LoginPage() {
     }
   }, []);
 
-  // 🛡️ রিকোয়ারমেন্ট রুল: ইউজার অলরেডি লগইন থাকলে তাকে এই পেজে রাখা যাবে না, রিডাইরেক্ট করতে হবে
+  // 🛡️ ইউজার অলরেডি লগইন থাকলে তাকে রিডাইরেক্ট করতে হবে
   useEffect(() => {
     if (!isPending && session) {
       router.push(redirectUrl);
@@ -34,6 +34,7 @@ export default function LoginPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    loading(true); // fix loading state triggering safely
     setLoading(true);
 
     try {
@@ -43,7 +44,7 @@ export default function LoginPage() {
       }, {
         onSuccess: (ctx) => {
           console.log("Login Success Hook:", ctx);
-          // সফল লগইন হলে ফুল রিফ্রেশ দিয়ে আগের পেজে বা হোমে নিয়ে যাবে
+          // সফল লগইন হলে ফুল রিফ্রেশ দিয়ে হোমে বা আগের পেজে নিয়ে যাবে
           window.location.href = redirectUrl;
         },
         onError: (ctx) => {
@@ -60,7 +61,7 @@ export default function LoginPage() {
     }
   };
 
-  // ⏳ রিকোয়ারমেন্ট রুল: ডাটা বা সেশন চেক হওয়ার সময় লোডিং স্পিনার দেখাতে হবে
+  // ⏳ ডাটা বা সেশন চেক হওয়ার সময় লোডিং স্পিনার
   if (isPending) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#f0f4f8]">
@@ -70,12 +71,10 @@ export default function LoginPage() {
     );
   }
 
-  // ইউজার অলরেডি লগইন থাকলে ফর্ম রেন্ডার হবেই না (ছিটকে চলে যাবে)
   if (session) return null;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f0f4f8] px-4 py-10 font-sans text-slate-800 tracking-tight">
-      {/* 📱 মোবাইল ফ্রেম */}
       <div className="w-full max-w-[390px] bg-white rounded-[45px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden border border-slate-200 flex flex-col justify-between min-h-[730px] relative">
         
         {/* টপ আকাশী কালার সেকশন */}
@@ -93,7 +92,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* ফর্ম এরিয়া */}
+        {/* ফর্ম এরিয়া */}
         <div className="px-8 pb-10 pt-2 flex-1 flex flex-col justify-between">
           <div>
             <h2 className="text-3xl font-extrabold text-center text-slate-900 tracking-normal mb-6">Login</h2>

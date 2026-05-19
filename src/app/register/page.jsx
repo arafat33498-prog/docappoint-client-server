@@ -21,7 +21,7 @@ export default function RegisterPage() {
   const hasLowercase = /[a-z]/.test(password);
   const isLongEnough = password.length >= 6;
 
-  // 🛡️ রিকোয়ারমেন্ট রুল: ইউজার অলরেডি লগইন থাকলে তাকে রেজিস্ট্রেশন পেজে রাখা যাবে延, হোমে পাঠিয়ে দেওয়া হবে
+  // 🛡️ ইউজার অলরেডি লগইন থাকলে হোমে পাঠিয়ে দেওয়া হবে
   useEffect(() => {
     if (!isPending && session) {
       router.push("/");
@@ -29,52 +29,52 @@ export default function RegisterPage() {
   }, [session, isPending, router]);
 
   const handleRegister = async (e) => {
-  e.preventDefault();
-  setError("");
+    e.preventDefault();
+    setError("");
 
-  if (!hasUppercase || !hasLowercase || !isLongEnough) {
-    setError("Please fulfill all password requirements.");
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    // ১. Register করো
-    const { error: signUpError } = await authClient.signUp.email({
-      email,
-      password,
-      name,
-      image: photoUrl,
-    });
-
-    if (signUpError) {
-      setError(signUpError.message || "Registration failed.");
+    if (!hasUppercase || !hasLowercase || !isLongEnough) {
+      setError("Please fulfill all password requirements.");
       return;
     }
 
-    // ২. Auto Login করো
-    const { error: signInError } = await authClient.signIn.email({
-      email,
-      password,
-    });
+    setLoading(true);
 
-    if (signInError) {
-      setError(signInError.message || "Login failed.");
-      return;
+    try {
+      // ১. Register করো
+      const { error: signUpError } = await authClient.signUp.email({
+        email,
+        password,
+        name,
+        image: photoUrl,
+      });
+
+      if (signUpError) {
+        setError(signUpError.message || "Registration failed.");
+        return;
+      }
+
+      // ২. Auto Login করো
+      const { error: signInError } = await authClient.signIn.email({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        setError(signInError.message || "Login failed.");
+        return;
+      }
+
+      // ৩. Home-এ রিডাইরেক্ট (ফুল উইন্ডো রিফ্রেশ সেশন ডাটা রিলোড করার জন্য)
+      window.location.href = "/";
+
+    } catch (err) {
+      setError("An unexpected error occurred.");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // ৩. Home এ নিয়ে যাও (full refresh দিয়ে যাতে navbar update হয়)
-    window.location.href = "/home";
-
-  } catch (err) {
-    setError("An unexpected error occurred.");
-  } finally {
-    setLoading(false);
-  }
-};
-
-  // ⏳ রিকোয়ারমেন্ট রুল: ডাটা বা সেশন চেক হওয়ার সময় লোডিং স্পিনার দেখাতে হবে
+  // ⏳ সেশন চেকিং লোডার
   if (isPending) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#f0f4f8]">
@@ -84,7 +84,6 @@ export default function RegisterPage() {
     );
   }
 
-  // ইউজার অলরেডি লগইন থাকলে ফর্ম রেন্ডার হবে না
   if (session) return null;
 
   return (
