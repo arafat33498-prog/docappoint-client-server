@@ -8,10 +8,13 @@ const TopDoctors = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5000/doctors')
-      .then((res) => res.json())
+    // 🎯 ফিক্স: লোকালহোস্টের পরিবর্তে লাইভ রেন্ডার সার্ভার এপিআই ইউআরএল ব্যবহার করা হলো
+    fetch('https://docappoint-server-ewq6.onrender.com/doctors')
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch doctors");
+        return res.json();
+      })
       .then((data) => {
-       
         setDoctors(data.slice(0, 3));
         setLoading(false);
       })
@@ -33,7 +36,6 @@ const TopDoctors = () => {
     <section className="bg-[#f4f7f6] py-24 px-4 min-h-screen flex items-center">
       <div className="max-w-7xl mx-auto w-full">
         
-       
         <div className="text-center mb-16">
           <span className="bg-[#e4ecea] text-slate-600 text-xs font-semibold px-4 py-1.5 rounded-full border border-slate-200">
             Expert Medical Professionals
@@ -46,10 +48,9 @@ const TopDoctors = () => {
           </p>
         </div>
 
-        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {doctors.map((doctor) => (
-            <DoctorCard key={doctor._id} doctor={doctor} />
+            <DoctorCard key={doctor._id || doctor.id} doctor={doctor} />
           ))}
         </div>
 

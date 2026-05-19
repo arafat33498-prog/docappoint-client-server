@@ -6,11 +6,8 @@ const MyAppointments = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-
- 
   const [toastMessage, setToastMessage] = useState({ type: "", text: "" });
 
- 
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [editPatientName, setEditPatientName] = useState("");
   const [editPhone, setEditPhone] = useState("");
@@ -24,8 +21,12 @@ const MyAppointments = () => {
   useEffect(() => {
     if (!userEmail) return;
 
-    fetch(`http://localhost:5000/bookings?email=${userEmail}`)
-      .then((res) => res.json())
+    // 🎯 ফিক্স: লাইভ ব্যাকএন্ড লিংক থেকে বুকিং ডাটা ফেচ করা হচ্ছে
+    fetch(`https://docappoint-server-ewq6.onrender.com/bookings?email=${userEmail}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch bookings");
+        return res.json();
+      })
       .then((data) => {
         setBookings(data);
         setLoading(false);
@@ -36,17 +37,16 @@ const MyAppointments = () => {
       });
   }, [userEmail]);
 
- 
   const handleDeleteBooking = async (id) => {
     if (!confirm("Are you sure you want to delete this appointment?")) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/bookings/${id}`, {
+      // 🎯 ফিক্স: লাইভ এপিআই দিয়ে ডিলিট রিকোয়েস্ট
+      const res = await fetch(`https://docappoint-server-ewq6.onrender.com/bookings/${id}`, {
         method: "DELETE",
       });
 
       if (res.ok) {
-       
         setBookings(bookings.filter((booking) => booking._id !== id));
         showToast("success", "Appointment deleted successfully!");
       } else {
@@ -58,7 +58,6 @@ const MyAppointments = () => {
     }
   };
 
-
   const openUpdateModal = (booking) => {
     setSelectedBooking(booking);
     setEditPatientName(booking.patientName || "");
@@ -67,11 +66,9 @@ const MyAppointments = () => {
     setEditDate(booking.appointmentDate || "");
     setEditTime(booking.appointmentTime || booking.timeSlot || "10:30 AM");
     
-   
     document.getElementById("update_appointment_modal").showModal();
   };
 
-  
   const handleUpdateSubmit = async (e) => {
     e.preventDefault();
     setActionLoading(true);
@@ -86,14 +83,14 @@ const MyAppointments = () => {
     };
 
     try {
-      const res = await fetch(`http://localhost:5000/bookings/${selectedBooking._id}`, {
+      // 🎯 ফিক্স: লাইভ এপিআই দিয়ে পুট (আপডেট) রিকোয়েস্ট
+      const res = await fetch(`https://docappoint-server-ewq6.onrender.com/bookings/${selectedBooking._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedBookingData),
       });
 
       if (res.ok) {
-       
         setBookings(bookings.map((b) => 
           b._id === selectedBooking._id ? { ...b, ...updatedBookingData } : b
         ));
@@ -110,7 +107,6 @@ const MyAppointments = () => {
       setActionLoading(false);
     }
   };
-
 
   const showToast = (type, text) => {
     setToastMessage({ type, text });
@@ -131,7 +127,6 @@ const MyAppointments = () => {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6 text-slate-800">
-      
       
       {toastMessage.text && (
         <div className="toast toast-top toast-center z-50">
@@ -185,7 +180,6 @@ const MyAppointments = () => {
                         {booking.status || 'Pending'}
                       </span>
                     </td>
-                  
                     <td className="text-right pr-6 space-x-2">
                       <button 
                         onClick={() => openUpdateModal(booking)}
@@ -208,7 +202,7 @@ const MyAppointments = () => {
         )}
       </div>
 
-    
+      {/* আপডেট মডেল */}
       <dialog id="update_appointment_modal" className="modal modal-bottom sm:modal-middle">
         <div className="modal-box bg-white max-w-md rounded-2xl p-6 border border-slate-100 text-slate-800 shadow-xl">
           <h3 className="font-bold text-xl text-slate-900 mb-1">Update Appointment</h3>
@@ -216,8 +210,6 @@ const MyAppointments = () => {
           
           {selectedBooking && (
             <form onSubmit={handleUpdateSubmit} className="space-y-4">
-              
-              {/* 🔒 রিকোয়ারমেন্ট অনুযায়ী Read-only ফিল্ডস (সিকিউরিটি ঠিক রাখার জন্য) */}
               <div className="form-control">
                 <label className="label text-xs font-bold text-slate-400">DOCTOR NAME (READ-ONLY)</label>
                 <input 
@@ -235,7 +227,6 @@ const MyAppointments = () => {
                 />
               </div>
 
-              
               <div className="form-control">
                 <label className="label text-xs font-bold text-slate-500">PATIENT NAME</label>
                 <input 
@@ -282,28 +273,29 @@ const MyAppointments = () => {
                     className="select select-sm select-bordered w-full bg-slate-50 border-slate-200 text-slate-800 focus:outline-none focus:border-sky-400 rounded-lg"
                     value={editTime} onChange={(e) => setEditTime(e.target.value)}
                   >
-                    <option value="09:00 AM - 12:00 PM">09:00 AM - 12:00 PM</option>
-                    <option value="04:00 PM - 07:00 PM">04:00 PM - 07:00 PM</option>
+                    <option value="10:00 AM">10:00 AM</option>
                     <option value="10:30 AM">10:30 AM</option>
-                    <option value="05:00 PM">05:00 PM</option>
+                    <option value="11:00 AM">11:00 AM</option>
+                    <option value="02:00 PM">02:00 PM</option>
+                    <option value="03:30 PM">03:30 PM</option>
                   </select>
                 </div>
               </div>
 
-              <div className="modal-action flex justify-end gap-2 pt-2">
+              <div className="modal-action pt-2">
                 <button 
                   type="button" 
-                  onClick={() => document.getElementById("update_appointment_modal").close()} 
-                  className="btn btn-sm btn-ghost rounded-lg border border-slate-200 text-slate-600 normal-case"
+                  onClick={() => document.getElementById("update_appointment_modal").close()}
+                  className="btn btn-sm btn-ghost rounded-xl normal-case"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
                   disabled={actionLoading}
-                  className="btn btn-sm bg-sky-500 hover:bg-sky-600 border-none text-white rounded-lg normal-case px-5 shadow-md shadow-sky-100"
+                  className="btn btn-sm bg-slate-950 text-white hover:bg-slate-900 rounded-xl px-5 border-none normal-case shadow-sm"
                 >
-                  {actionLoading ? <span className="loading loading-spinner loading-xs"></span> : "Save"}
+                  {actionLoading ? <span className="loading loading-spinner loading-xs"></span> : "Save Changes"}
                 </button>
               </div>
             </form>
