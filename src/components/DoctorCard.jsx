@@ -11,8 +11,8 @@ const DoctorCard = ({ doctor }) => {
   const doctorId = _id || id; 
 
   const handleDetailsClick = () => {
-    // ✅ URL Path fixed to dynamic doctor details route
-    const targetUrl = `/doctors/${doctorId}`;
+    // ✅ ডাইনামিক অ্যাপয়েন্টমেন্ট ডিটেইলস রুটে রিডাইরেক্ট পাথ সেট করা হলো
+    const targetUrl = `/appointments/${doctorId}`;
     
     if (session) {
       router.push(targetUrl);
@@ -37,3 +37,20 @@ const DoctorCard = ({ doctor }) => {
           <p className="text-sm font-medium text-slate-600">
             {specialty} • {experience}
           </p>
+        </div>
+
+        {/* হোভার বাটন ইফেক্ট */}
+        <div className="absolute inset-x-6 bottom-6 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 ease-out">
+          <button 
+            onClick={handleDetailsClick}
+            className="w-full py-3.5 bg-slate-950 text-white rounded-2xl font-bold text-sm shadow-md active:scale-[0.98] transition-all hover:bg-slate-900 cursor-pointer"
+          >
+            View Details & Book
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DoctorCard;
