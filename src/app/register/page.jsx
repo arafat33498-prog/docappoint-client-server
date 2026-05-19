@@ -184,6 +184,7 @@ export default function RegisterPage() {
 
           <div className="text-center text-xs font-bold text-slate-500 mt-6 tracking-normal">
             Already have an account?{" "}
+            
             <Link href="/login" className="text-sky-500 font-extrabold hover:underline transition-all pl-0.5">
               Sign In
             </Link>
