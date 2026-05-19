@@ -50,7 +50,7 @@ export default function RegisterPage() {
         onSuccess: (ctx) => {
           console.log("Registration Success Hook:", ctx);
           // 📌 অ্যাসাইনমেন্ট রিকোয়ারমেন্ট: "On successful registration: Redirect user to Login page"
-          router.push("/login");
+          router.push("/home");
         },
         onError: (ctx) => {
           console.error("Registration Error Hook:", ctx);
