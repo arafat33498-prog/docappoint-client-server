@@ -14,9 +14,9 @@ export default function Navbar() {
   const handleLogout = async () => {
     try {
       await authClient.signOut();
-      // Hard redirect to ensure navbar updates
+      // Reload page to ensure navbar updates
       setTimeout(() => {
-        window.location.href = "/home";
+        window.location.reload();
       }, 200);
     } catch (err) {
       console.error("Logout failed:", err);

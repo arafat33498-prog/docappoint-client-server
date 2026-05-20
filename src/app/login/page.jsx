@@ -45,8 +45,8 @@ export default function LoginPage() {
         return;
       }
 
-      // Hard redirect to ensure navbar updates with new session
-      window.location.href = redirectUrl;
+      // Reload page to ensure navbar updates with new session
+      window.location.reload();
       
     } catch (err) {
       console.error("Unexpected Login Error:", err);

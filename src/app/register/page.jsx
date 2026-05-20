@@ -63,8 +63,8 @@ export default function RegisterPage() {
         return;
       }
 
-      // 3. Hard redirect to home (ensures navbar updates with new session)
-      window.location.href = "/home";
+      // 3. Reload page to update navbar with new session
+      window.location.reload();
 
     } catch (err) {
       console.error("Unexpected Register Error:", err);
