@@ -1,13 +1,19 @@
-"use client";
+// lib/auth.js
 
-import { createAuthClient } from "better-auth/react";
+export const getUser = () => {
+  if (typeof window === "undefined") return null;
+  const user = localStorage.getItem("docappointUser");
+  return user ? JSON.parse(user) : null;
+};
 
-export const authClient = createAuthClient({
-  
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+export const setSession = (user, token) => {
+  if (typeof window === "undefined") return;
+  localStorage.setItem("docappointUser", JSON.stringify(user));
+  localStorage.setItem("docappointToken", token);
+};
 
-  fetchOptions: {
-    credentials: "include",
-  },
-
-});
+export const logoutUser = () => {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem("docappointUser");
+  localStorage.removeItem("docappointToken");
+};

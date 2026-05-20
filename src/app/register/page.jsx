@@ -1,29 +1,29 @@
 "use client";
+
 import { useState, useEffect } from "react";
-import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { getUser } from "@/lib/auth"; // আপনার Auth ইউটিলিটি ফাইল থেকে getUser ইম্পোর্ট করুন
 
 export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [photoUrl, setPhotoUrl] = useState(""); 
+  const [photoUrl, setPhotoUrl] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const { data: session, isPending } = authClient.useSession();
+  // JWT এ সেশন চেক করার উপায়
+  useEffect(() => {
+    if (getUser()) {
+      router.push("/home");
+    }
+  }, [router]);
 
   const hasUppercase = /[A-Z]/.test(password);
   const hasLowercase = /[a-z]/.test(password);
   const isLongEnough = password.length >= 6;
-
-  useEffect(() => {
-    if (!isPending && session) {
-      window.location.href = "/home";
-    }
-  }, [session, isPending]);
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -37,52 +37,42 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // 1. Register
-      const signUpResult = await authClient.signUp.email({
-        email,
-        password,
-        name,
-        image: photoUrl || undefined,
+      // API কল করে রেজিস্ট্রেশন সম্পন্ন করা
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          name,
+          image: photoUrl || undefined,
+        }),
       });
 
-      if (signUpResult.error) {
-        setError(signUpResult.error.message || "Registration failed.");
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Registration failed.");
         setLoading(false);
         return;
       }
 
-      // 2. Auto Login
-      const signInResult = await authClient.signIn.email({
-        email,
-        password,
-      });
-
-      if (signInResult.error) {
-        setError(signInResult.error.message || "Login failed.");
-        setLoading(false);
-        return;
+      // রেজিস্ট্রেশন সফল হলে লগইন ডেটা সেভ করা
+      if (data.user && data.token) {
+        localStorage.setItem("docappointUser", JSON.stringify(data.user));
+        localStorage.setItem("docappointToken", data.token);
       }
 
-      // 3. Redirect to home - Better Auth handles session
-      window.location.href = "/home";
+      // সাকসেসফুল রেজিস্ট্রেশন পর রিডাইরেক্ট
+      router.push("/home");
+      router.refresh();
 
     } catch (err) {
-      console.error("Unexpected Register Error:", err);
+      console.error("Registration Error:", err);
       setError("An unexpected error occurred.");
       setLoading(false);
     }
   };
-
-  if (isPending) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#f0f4f8]">
-        <span className="loading loading-spinner loading-lg text-sky-500"></span>
-        <p className="mt-2 text-sm font-bold text-slate-500 tracking-wide">Checking Session...</p>
-      </div>
-    );
-  }
-
-  if (session) return null;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f0f4f8] px-4 py-10 font-sans text-slate-800 tracking-tight">
@@ -106,60 +96,30 @@ export default function RegisterPage() {
         <div className="px-7 pb-8 pt-2 flex-1 flex flex-col justify-between">
           <form onSubmit={handleRegister} className="space-y-4">
             {error && (
-              <div className="alert alert-error text-xs py-2.5 rounded-2xl text-white font-medium shadow-sm mb-2">
-                <span>{error}</span>
+              <div className="bg-red-500 text-white text-xs py-2.5 px-4 rounded-2xl font-medium shadow-sm mb-2">
+                {error}
               </div>
             )}
 
-            {/* Full Name */}
+            {/* Form Fields - Input গুলা আগের মতোই আছে */}
             <div className="bg-white rounded-xl p-2.5 px-4 border-2 border-slate-400 focus-within:border-sky-500 transition-all">
               <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-0.5">Full Name</label>
-              <input 
-                type="text" 
-                placeholder="John Doe" 
-                className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder-slate-400/70" 
-                required 
-                value={name} 
-                onChange={(e) => setName(e.target.value)}
-              />
+              <input type="text" placeholder="John Doe" className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder-slate-400/70" required value={name} onChange={(e) => setName(e.target.value)} />
             </div>
 
-            {/* Email */}
             <div className="bg-white rounded-xl p-2.5 px-4 border-2 border-slate-400 focus-within:border-sky-500 transition-all">
               <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-0.5">Email Address</label>
-              <input 
-                type="email" 
-                placeholder="name@example.com" 
-                className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder-slate-400/70" 
-                required 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)}
-              />
+              <input type="email" placeholder="name@example.com" className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder-slate-400/70" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
 
-            {/* Photo URL */}
             <div className="bg-white rounded-xl p-2.5 px-4 border-2 border-slate-400 focus-within:border-sky-500 transition-all">
               <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-0.5">Avatar URL (Optional)</label>
-              <input 
-                type="url" 
-                placeholder="https://example.com/photo.jpg" 
-                className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder-slate-400/70" 
-                value={photoUrl} 
-                onChange={(e) => setPhotoUrl(e.target.value)}
-              />
+              <input type="url" placeholder="https://example.com/photo.jpg" className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder-slate-400/70" value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)} />
             </div>
 
-            {/* Password */}
             <div className="bg-white rounded-xl p-2.5 px-4 border-2 border-slate-400 focus-within:border-sky-500 transition-all">
               <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-0.5">Password</label>
-              <input 
-                type="password" 
-                placeholder="••••••••" 
-                className={`w-full bg-transparent text-sm font-bold text-slate-900 outline-none placeholder-slate-400/70 placeholder:tracking-normal ${password ? 'tracking-widest' : 'tracking-normal'}`} 
-                required 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <input type="password" placeholder="••••••••" className="w-full bg-transparent text-sm font-bold text-slate-900 outline-none placeholder-slate-400/70" required value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
 
             {/* Password Validation */}
@@ -175,13 +135,8 @@ export default function RegisterPage() {
               </p>
             </div>
 
-            {/* Submit Button */}
             <div className="pt-2">
-              <button 
-                type="submit" 
-                disabled={loading}
-                className="w-full py-3.5 bg-slate-950 text-white rounded-xl font-bold tracking-wide text-sm shadow-md active:scale-[0.98] transition-all hover:bg-slate-900 flex justify-center items-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
-              >
+              <button type="submit" disabled={loading} className="w-full py-3.5 bg-slate-950 text-white rounded-xl font-bold tracking-wide text-sm shadow-md active:scale-[0.98] transition-all hover:bg-slate-900 flex justify-center items-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed">
                 {loading ? <span className="loading loading-spinner loading-sm text-white"></span> : "Sign Up"}
               </button>
             </div>

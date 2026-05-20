@@ -1,25 +1,31 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { authClient } from "@/lib/auth-client";
+import { getUser } from "@/lib/auth"; // আপনার Auth ইউটিলিটি ফাইল থেকে ইম্পোর্ট করুন
 
 const DashboardOverview = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const { data: session, isPending: sessionLoading } = authClient.useSession();
-  const userEmail = session?.user?.email;
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // 🎯 লাইভ API লিঙ্ক এবং credentials: "include" যোগ করা হয়েছে
-    if (!userEmail) {
-        setLoading(false);
-        return;
+    // localStorage থেকে ইউজার ডাটা নেওয়া
+    const currentUser = getUser();
+    setUser(currentUser);
+
+    if (!currentUser?.email) {
+      setLoading(false);
+      return;
     }
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings?email=${userEmail}`, {
+    // JWT টোকেন নিয়ে API রিকোয়েস্ট করা
+    const token = localStorage.getItem("docappointToken");
+
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings?email=${currentUser.email}`, {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include", // এটি ছাড়া সেশন কুকি ব্যাকএন্ডে যাবে না
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}` // JWT টোকেন যোগ করা
+      },
     })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch dashboard data");
@@ -33,7 +39,7 @@ const DashboardOverview = () => {
         console.error("Error fetching overview bookings:", err);
         setLoading(false);
       });
-  }, [userEmail]);
+  }, []);
 
   const totalBookings = bookings.length;
   const pendingBookings = bookings.filter(
@@ -43,7 +49,7 @@ const DashboardOverview = () => {
     (b) => b.status?.toLowerCase() === "approved" || b.status?.toLowerCase() === "completed"
   ).length;
 
-  if (sessionLoading || (userEmail && loading)) {
+  if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[50vh]">
         <span className="loading loading-spinner loading-lg text-slate-700"></span>
@@ -51,7 +57,7 @@ const DashboardOverview = () => {
     );
   }
 
-  if (!userEmail) {
+  if (!user) {
     return <div className="text-center py-10 text-red-500 font-medium">Please log in to view dashboard.</div>;
   }
 
@@ -60,7 +66,7 @@ const DashboardOverview = () => {
       {/* টপ ব্যানার */}
       <div className="bg-white rounded-3xl border border-slate-100 p-6 md:p-8 shadow-sm">
         <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
-          Hello, {session?.user?.name || "Patient"}! 👋
+          Hello, {user?.name || "Patient"}! 👋
         </h1>
         <p className="text-slate-400 text-sm mt-1.5 max-w-md leading-relaxed">
           Manage your appointments, check your booking status, or update your medical profile details seamlessly.
