@@ -63,8 +63,8 @@ export default function RegisterPage() {
         return;
       }
 
-      // 3. Reload page to update navbar with new session
-      window.location.reload();
+      // 3. Redirect to home - Better Auth handles session
+      window.location.href = "/home";
 
     } catch (err) {
       console.error("Unexpected Register Error:", err);

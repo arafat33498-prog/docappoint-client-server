@@ -14,10 +14,8 @@ export default function Navbar() {
   const handleLogout = async () => {
     try {
       await authClient.signOut();
-      // Reload page to ensure navbar updates
-      setTimeout(() => {
-        window.location.reload();
-      }, 200);
+      // Redirect to home - Better Auth handles session cleanup
+      window.location.href = "/home";
     } catch (err) {
       console.error("Logout failed:", err);
     }

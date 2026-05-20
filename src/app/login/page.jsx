@@ -45,8 +45,8 @@ export default function LoginPage() {
         return;
       }
 
-      // Reload page to ensure navbar updates with new session
-      window.location.reload();
+      // Redirect - Better Auth handles session
+      window.location.href = redirectUrl;
       
     } catch (err) {
       console.error("Unexpected Login Error:", err);
