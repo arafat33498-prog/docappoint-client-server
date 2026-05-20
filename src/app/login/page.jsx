@@ -10,23 +10,21 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [redirectUrl, setRedirectUrl] = useState("/");
+  const [redirectUrl, setRedirectUrl] = useState("/home");
 
   const { data: session, isPending } = authClient.useSession();
 
-  // 🎯 URL থেকে রিডাইরেক্ট পাথ নেওয়া
   useEffect(() => {
     if (typeof window !== "undefined") {
       const searchParams = new URLSearchParams(window.location.search);
-      const from = searchParams.get("redirect") || "/";
+      const from = searchParams.get("redirect") || "/home";
       setRedirectUrl(from);
     }
   }, []);
 
-  // 🔄 ইউজার যদি অলরেডি লগইন থাকে, তবে তাকে রিডাইরেক্ট করা
   useEffect(() => {
     if (!isPending && session) {
-      window.location.href = redirectUrl; // ✅ হার্ড রিফ্রেশ রিডাইরেকশন (নেভবার ইনস্ট্যান্ট আপডেট নিশ্চিত করবে)
+      window.location.href = redirectUrl;
     }
   }, [session, isPending, redirectUrl]);
 
@@ -36,21 +34,19 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await authClient.signIn.email({
+      const result = await authClient.signIn.email({
         email,
         password,
-      }, {
-        onSuccess: (ctx) => {
-          console.log("Login Success Hook:", ctx);
-          // ✅ সেশন আপডেট নিশ্চিত করতে হার্ড রিফ্রেশ রিডাইরেক্ট
-          window.location.href = redirectUrl; 
-        },
-        onError: (ctx) => {
-          console.error("Login Error Hook:", ctx);
-          setError(ctx.error.message || "Invalid email or password.");
-          setLoading(false); // Hook এর ভেতরেও ফলব্যাক হিসেবে সেফটি লোডিং ফলস
-        }
       });
+
+      if (result.error) {
+        setError(result.error.message || "Invalid email or password.");
+        setLoading(false);
+        return;
+      }
+
+      // Hard redirect to ensure navbar updates with new session
+      window.location.href = redirectUrl;
       
     } catch (err) {
       console.error("Unexpected Login Error:", err);
@@ -59,7 +55,6 @@ export default function LoginPage() {
     }
   };
 
-  // ⏳ সেশন চেকিং স্টেট
   if (isPending) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#f0f4f8]">
@@ -75,7 +70,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#f0f4f8] px-4 py-10 font-sans text-slate-800 tracking-tight">
       <div className="w-full max-w-[390px] bg-white rounded-[45px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden border border-slate-200 flex flex-col justify-between min-h-[730px] relative">
         
-        {/* টপ ব্যানার এরিয়া */}
+        {/* Top Banner */}
         <div className="bg-sky-400 pt-14 pb-24 px-8 relative flex flex-col items-center justify-center">
           <div className="w-14 h-14 bg-white rounded-2xl shadow-md flex items-center justify-center z-10 mb-2">
             <svg viewBox="0 0 24 24" className="w-8 h-8 text-slate-950 fill-current">
@@ -90,7 +85,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* ফর্ম এরিয়া */}
+        {/* Form Area */}
         <div className="px-8 pb-10 pt-2 flex-1 flex flex-col justify-between">
           <div>
             <h2 className="text-3xl font-extrabold text-center text-slate-900 tracking-normal mb-6">Login</h2>
@@ -102,7 +97,7 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {/* ইমেইল ইনপুট */}
+              {/* Email Input */}
               <div className="bg-white rounded-xl p-2.5 px-4 border-2 border-slate-400 focus-within:border-sky-500 transition-all">
                 <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-0.5">Email Address</label>
                 <input 
@@ -115,7 +110,7 @@ export default function LoginPage() {
                 />
               </div>
 
-              {/* পাসওয়ার্ড ইনপুট */}
+              {/* Password Input */}
               <div className="bg-white rounded-xl p-2.5 px-4 border-2 border-slate-400 focus-within:border-sky-500 transition-all">
                 <div className="flex justify-between items-center mb-0.5">
                   <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700">Password</label>
@@ -124,15 +119,14 @@ export default function LoginPage() {
                 <input 
                   type="password" 
                   placeholder="••••••••" 
-                  // 🎯 ফিক্স: শুধু ভ্যালু থাকলে টাইপিং এর সময় ডটগুলো বড় দেখানোর জন্য tracking-widest হবে
-                  className={`w-full bg-transparent text-sm font-bold text-slate-900 outline-none placeholder-slate-400/70 placeholder:tracking-normal ${password ? 'tracking-widest' : 'tracking-normal'}`} 
+                  className="w-full bg-transparent text-sm font-bold text-slate-900 outline-none placeholder-slate-400/70 placeholder:tracking-normal" 
                   required 
                   value={password} 
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
 
-              {/* সাবমিট বাটন */}
+              {/* Submit Button */}
               <div className="pt-2">
                 <button 
                   type="submit" 

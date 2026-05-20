@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { usePathname } from "next/navigation"; 
 import { authClient } from "@/lib/auth-client"; 
 
@@ -8,27 +8,16 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname(); 
 
-  // ⚠️ ফিক্স: useSession থেকে refetch-কে অবজেক্টের ভেতরে নিয়ে আসা হয়েছে
-  const { data: session, isPending, refetch } = authClient.useSession();
-  const user = session?.user; 
-
-  // 🔄 ইউজার যখনই কোনো পেজ চেঞ্জ করবে (যেমন: লগইন বা রেজিস্ট্রেশন এর পর), 
-  // তখনই ব্যাকগ্রাউন্ডে সেশন স্টেটটি রিফ্রেশ হবে যেন নেভবার সাথে সাথে আপডেট হয়।
-  useEffect(() => {
-    if (refetch) {
-      refetch();
-    }
-  }, [pathname, refetch]);
+  const { data: session, isPending } = authClient.useSession();
+  const user = session?.user;
 
   const handleLogout = async () => {
     try {
-      await authClient.signOut({
-        fetchOptions: {
-          onSuccess: () => {
-            window.location.href = "/login";
-          },
-        },
-      });
+      await authClient.signOut();
+      // Hard redirect to ensure navbar updates
+      setTimeout(() => {
+        window.location.href = "/home";
+      }, 200);
     } catch (err) {
       console.error("Logout failed:", err);
     }
@@ -36,11 +25,10 @@ export default function Navbar() {
 
   return (
     <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm w-full">
-      {/* 🎯 এখানে max-w-6xl থেকে বাড়িয়ে max-w-[92%] অথবা max-w-7xl এবং px-4 বা px-8 করা হয়েছে যেন দুই পাশে খালি জায়গা কমে যায় */}
       <div className="max-w-[92%] xl:max-w-[1400px] mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
 
-        {/* 🏢 লোগো এরিয়া */}
-        <Link href="/" className="flex items-center gap-2 select-none">
+        {/* Logo */}
+        <Link href="/home" className="flex items-center gap-2 select-none">
           <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center shadow-sm">
             <span className="text-white font-bold text-sm">D</span>
           </div>
@@ -49,7 +37,7 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* 🔗 মেনু লিঙ্কসমূহ (Desktop) */}
+        {/* Desktop Menu Links */}
         <div className="hidden md:flex items-center gap-8">
           <Link 
             href="/home" 
@@ -81,7 +69,7 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* 👤 ইউজার প্রোফাইল এবং অ্যাকশন বাটনসমূহ (Desktop) */}
+        {/* User Profile & Buttons */}
         <div className="hidden md:flex items-center gap-3">
           {isPending ? (
             <span className="loading loading-spinner loading-sm text-sky-500"></span>
@@ -92,10 +80,10 @@ export default function Navbar() {
                   <img src={user.image} alt="profile" className="w-9 h-9 rounded-full border-2 border-sky-500 object-cover shadow-sm" />
                 ) : (
                   <div className="w-9 h-9 rounded-full bg-sky-100 border-2 border-sky-500 flex items-center justify-center text-sky-600 font-bold uppercase text-sm">
-                    {user.name?.[0]}
+                    {user.name?.[0] || "U"}
                   </div>
                 )}
-                <span className="text-sm font-medium text-slate-700 max-w-[120px] truncate">{user.name}</span>
+                <span className="text-sm font-medium text-slate-700 max-w-[120px] truncate">{user.name || "User"}</span>
               </div>
               <button 
                 onClick={handleLogout}
@@ -116,7 +104,7 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* 📱 মোবাইল মেনু টগল বাটন */}
+        {/* Mobile Menu Toggle */}
         <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden p-1 rounded-lg hover:bg-gray-50 transition-colors">
           <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -124,9 +112,9 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* 📱 রেসপন্সিভ মোবাইল মেনু ড্রপডাউন */}
+      {/* Mobile Menu */}
       {menuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 px-6 py-4 flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="md:hidden bg-white border-t border-gray-100 px-6 py-4 flex flex-col gap-4">
           <Link 
             href="/home" 
             className={`text-sm font-medium ${pathname === "/home" ? "text-sky-500 font-semibold" : "text-gray-600"}`}
@@ -161,10 +149,10 @@ export default function Navbar() {
                     <img src={user.image} alt="profile" className="w-8 h-8 rounded-full border border-sky-500 object-cover" />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-sky-100 border border-sky-500 flex items-center justify-center text-sky-600 font-bold uppercase text-xs">
-                      {user.name?.[0]}
+                      {user.name?.[0] || "U"}
                     </div>
                   )}
-                  <span className="text-sm font-medium text-gray-700">{user.name}</span>
+                  <span className="text-sm font-medium text-gray-700">{user.name || "User"}</span>
                 </div>
                 <button 
                   onClick={() => { handleLogout(); setMenuOpen(false); }}

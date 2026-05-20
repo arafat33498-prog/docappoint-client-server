@@ -13,18 +13,15 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 🔄 Better Auth সেশন স্টেট চেক
   const { data: session, isPending } = authClient.useSession();
 
-  // রিয়েল-টাইম পাসওয়ার্ড ভ্যালিডেশন
   const hasUppercase = /[A-Z]/.test(password);
   const hasLowercase = /[a-z]/.test(password);
   const isLongEnough = password.length >= 6;
 
-  // 🛡️ ইউজার অলরেডি লগইন থাকলে হোমে পাঠিয়ে দেওয়া হবে (ইনস্ট্যান্ট আপডেট নিশ্চিত করতে href)
   useEffect(() => {
     if (!isPending && session) {
-      window.location.href = "/";
+      window.location.href = "/home";
     }
   }, [session, isPending]);
 
@@ -40,34 +37,34 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // ১. Register করো
-      const { error: signUpError } = await authClient.signUp.email({
+      // 1. Register
+      const signUpResult = await authClient.signUp.email({
         email,
         password,
         name,
-        image: photoUrl || undefined, // ছবি না দিলে যেন ডাটাবেজে নাল বা আনডিফাইনড যায়
+        image: photoUrl || undefined,
       });
 
-      if (signUpError) {
-        setError(signUpError.message || "Registration failed.");
-        setLoading(false); // ✅ বাটন লোডিং রিলিজ করার ফিক্স
+      if (signUpResult.error) {
+        setError(signUpResult.error.message || "Registration failed.");
+        setLoading(false);
         return;
       }
 
-      // ২. Auto Login করো
-      const { error: signInError } = await authClient.signIn.email({
+      // 2. Auto Login
+      const signInResult = await authClient.signIn.email({
         email,
         password,
       });
 
-      if (signInError) {
-        setError(signInError.message || "Login failed.");
-        setLoading(false); // ✅ বাটন লোডিং রিলিজ করার ফিক্স
+      if (signInResult.error) {
+        setError(signInResult.error.message || "Login failed.");
+        setLoading(false);
         return;
       }
 
-      // ৩. Home-এ রিডাইরেক্ট (ফুল উইন্ডো রিফ্রেশ সেশন ডাটা রিলোড করার জন্য)
-      window.location.href = "/";
+      // 3. Hard redirect to home (ensures navbar updates with new session)
+      window.location.href = "/home";
 
     } catch (err) {
       console.error("Unexpected Register Error:", err);
@@ -76,7 +73,6 @@ export default function RegisterPage() {
     }
   };
 
-  // ⏳ সেশন চেকিং লোডার
   if (isPending) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#f0f4f8]">
@@ -92,7 +88,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#f0f4f8] px-4 py-10 font-sans text-slate-800 tracking-tight">
       <div className="w-full max-w-[390px] bg-white rounded-[45px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden border border-slate-200 flex flex-col justify-between min-h-[820px] relative">
         
-        {/* টপ আকাশী কালার সেকশন */}
+        {/* Top Banner */}
         <div className="bg-sky-400 pt-14 pb-20 px-8 relative">
           <div className="absolute top-7 left-7 text-white cursor-pointer text-lg hover:scale-110 transition-transform z-10">
             <Link href="/login">←</Link>
@@ -106,7 +102,7 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {/* ফর্ম এরিয়া */}
+        {/* Form Area */}
         <div className="px-7 pb-8 pt-2 flex-1 flex flex-col justify-between">
           <form onSubmit={handleRegister} className="space-y-4">
             {error && (
@@ -119,9 +115,12 @@ export default function RegisterPage() {
             <div className="bg-white rounded-xl p-2.5 px-4 border-2 border-slate-400 focus-within:border-sky-500 transition-all">
               <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-0.5">Full Name</label>
               <input 
-                type="text" placeholder="John Doe" 
-                className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder-slate-400/70" required 
-                value={name} onChange={(e) => setName(e.target.value)}
+                type="text" 
+                placeholder="John Doe" 
+                className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder-slate-400/70" 
+                required 
+                value={name} 
+                onChange={(e) => setName(e.target.value)}
               />
             </div>
 
@@ -129,19 +128,24 @@ export default function RegisterPage() {
             <div className="bg-white rounded-xl p-2.5 px-4 border-2 border-slate-400 focus-within:border-sky-500 transition-all">
               <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-0.5">Email Address</label>
               <input 
-                type="email" placeholder="name@example.com" 
-                className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder-slate-400/70" required 
-                value={email} onChange={(e) => setEmail(e.target.value)}
+                type="email" 
+                placeholder="name@example.com" 
+                className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder-slate-400/70" 
+                required 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
 
-            {/* Photo URL (UX সহজ করতে required বাদ দেওয়া হয়েছে) */}
+            {/* Photo URL */}
             <div className="bg-white rounded-xl p-2.5 px-4 border-2 border-slate-400 focus-within:border-sky-500 transition-all">
               <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-0.5">Avatar URL (Optional)</label>
               <input 
-                type="url" placeholder="https://example.com/photo.jpg" 
+                type="url" 
+                placeholder="https://example.com/photo.jpg" 
                 className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder-slate-400/70" 
-                value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)}
+                value={photoUrl} 
+                onChange={(e) => setPhotoUrl(e.target.value)}
               />
             </div>
 
@@ -149,15 +153,16 @@ export default function RegisterPage() {
             <div className="bg-white rounded-xl p-2.5 px-4 border-2 border-slate-400 focus-within:border-sky-500 transition-all">
               <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-0.5">Password</label>
               <input 
-                type="password" placeholder="••••••••" 
-                // 🎯 ফিক্স: টাইপ করার সময় ডটগুলো সুন্দর দেখাবে, কিন্তু প্লেসহোল্ডার ঠিক থাকবে
+                type="password" 
+                placeholder="••••••••" 
                 className={`w-full bg-transparent text-sm font-bold text-slate-900 outline-none placeholder-slate-400/70 placeholder:tracking-normal ${password ? 'tracking-widest' : 'tracking-normal'}`} 
                 required 
-                value={password} onChange={(e) => setPassword(e.target.value)}
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
 
-            {/* পাসওয়ার্ড ভ্যালিডেশন টেক্সট */}
+            {/* Password Validation */}
             <div className="px-2 pt-0.5 space-y-1">
               <p className={`text-[11px] font-bold tracking-wide transition-colors flex items-center gap-1.5 ${isLongEnough ? "text-emerald-600" : "text-rose-500"}`}>
                 <span>{isLongEnough ? "✓" : "•"}</span> Minimum 6 characters
@@ -170,7 +175,7 @@ export default function RegisterPage() {
               </p>
             </div>
 
-            {/* সাবমিট বাটন */}
+            {/* Submit Button */}
             <div className="pt-2">
               <button 
                 type="submit" 
@@ -184,7 +189,6 @@ export default function RegisterPage() {
 
           <div className="text-center text-xs font-bold text-slate-500 mt-6 tracking-normal">
             Already have an account?{" "}
-            
             <Link href="/login" className="text-sky-500 font-extrabold hover:underline transition-all pl-0.5">
               Sign In
             </Link>
