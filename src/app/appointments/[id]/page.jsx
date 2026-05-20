@@ -25,10 +25,13 @@ const DoctorDetails = () => {
   const { data: session } = authClient.useSession();
   const userEmail = session?.user?.email;
 
+  // API URL from environment variable
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
   useEffect(() => {
     if (!id) return;
 
-    fetch(`http://localhost:5000/doctors/${id}`) 
+    fetch(`${API_URL}/doctors/${id}`) 
       .then((res) => {
         if (!res.ok) throw new Error("Doctor not found");
         return res.json();
@@ -41,7 +44,7 @@ const DoctorDetails = () => {
         console.error("Error fetching doctor details:", err);
         setLoading(false);
       });
-  }, [id]);
+  }, [id, API_URL]);
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
@@ -56,7 +59,7 @@ const DoctorDetails = () => {
 
     
     const bookingData = {
-      userEmail: userEmail, // 
+      userEmail: userEmail,
       doctorName: doctor.name,
       doctorId: doctor._id || doctor.id,
       specialty: doctor.specialty,
@@ -72,7 +75,7 @@ const DoctorDetails = () => {
     };
 
     try {
-      const res = await fetch("http://localhost:5000/bookings", {
+      const res = await fetch(`${API_URL}/bookings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(bookingData)
@@ -165,7 +168,7 @@ const DoctorDetails = () => {
                 </div>
                 <div>
                   <p className="text-slate-400 text-xs font-medium">Rating</p>
-                  <p className="font-semibold text-slate-700 mt-0.5">⭐ 4.9 (98 Reviews)</p>
+                  <p className="font-semibold text-slate-700 mt-0.5">⭐ {doctor.rating || "4.9"} (98 Reviews)</p>
                 </div>
                 <div>
                   <p className="text-slate-400 text-xs font-medium">Availability</p>
