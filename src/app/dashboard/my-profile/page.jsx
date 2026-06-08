@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { getUser } from "@/lib/auth"; // আপনার Auth ইউটিলিটি ফাইল
+import { getUser } from "@/lib/auth-client"; // আপনার Auth ইউটিলিটি ফাইল
 
 const MyProfile = () => {
   const [user, setUser] = useState(null);

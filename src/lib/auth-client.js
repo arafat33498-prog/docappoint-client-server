@@ -1,11 +1,6 @@
-// lib/auth.js
-import { authClient } from "@/lib/auth-client";
+// src/lib/auth-client.js
+import { createAuthClient } from "better-auth/react";
 
-// এখন আর localStorage লাগবে না, আমরা authClient এর সেশন ব্যবহার করব
-export const useAuth = () => {
-  return authClient.useSession();
-};
-
-export const logout = async () => {
-  return await authClient.signOut();
-};
+export const authClient = createAuthClient({
+    baseURL: process.env.NEXT_PUBLIC_API_URL, 
+});
