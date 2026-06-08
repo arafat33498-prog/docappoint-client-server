@@ -1,28 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [user, setUser] = useState(null);
-
   const pathname = usePathname();
+  const router = useRouter();
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
+  // Better Auth থেকে সেশন এবং ইউজার ডাটা নেওয়া হচ্ছে
+  const { data: session } = authClient.useSession();
+  const user = session?.user;
 
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
-    window.location.href = "/home";
+  const handleLogout = async () => {
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          router.push("/home");
+          router.refresh();
+        },
+      },
+    });
   };
 
   return (
@@ -150,38 +150,29 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {menuOpen && (
         <div className="md:hidden bg-white border-t border-gray-100 px-6 py-4 flex flex-col gap-4">
-
           <Link
             href="/home"
             className={`text-sm font-medium ${
-              pathname === "/home"
-                ? "text-sky-500 font-semibold"
-                : "text-gray-600"
+              pathname === "/home" ? "text-sky-500 font-semibold" : "text-gray-600"
             }`}
             onClick={() => setMenuOpen(false)}
           >
             Home
           </Link>
-
           <Link
             href="/appointments"
             className={`text-sm font-medium ${
-              pathname === "/appointments"
-                ? "text-sky-500 font-semibold"
-                : "text-gray-600"
+              pathname === "/appointments" ? "text-sky-500 font-semibold" : "text-gray-600"
             }`}
             onClick={() => setMenuOpen(false)}
           >
             All Appointments
           </Link>
-
           {user && (
             <Link
               href="/dashboard"
               className={`text-sm font-medium ${
-                pathname.startsWith("/dashboard")
-                  ? "text-sky-500 font-semibold"
-                  : "text-gray-600"
+                pathname.startsWith("/dashboard") ? "text-sky-500 font-semibold" : "text-gray-600"
               }`}
               onClick={() => setMenuOpen(false)}
             >
@@ -192,7 +183,6 @@ export default function Navbar() {
           <div className="border-t border-gray-100 pt-3">
             {user ? (
               <div className="flex flex-col gap-3">
-
                 <div className="flex items-center gap-2">
                   {user.image ? (
                     <img
@@ -205,12 +195,10 @@ export default function Navbar() {
                       {user.name?.[0] || "U"}
                     </div>
                   )}
-
                   <span className="text-sm font-medium text-gray-700">
                     {user.name || "User"}
                   </span>
                 </div>
-
                 <button
                   onClick={() => {
                     handleLogout();
@@ -230,7 +218,6 @@ export default function Navbar() {
                 >
                   Login
                 </Link>
-
                 <Link
                   href="/register"
                   className="text-sm px-5 py-2 text-center rounded-full bg-sky-500 text-white w-full"

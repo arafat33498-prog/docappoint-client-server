@@ -8,16 +8,17 @@ const TopDoctors = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // লোকালহস্টে থাকলে http://localhost:5000 ব্যবহার করবে, নাহলে লাইভ URL
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    // API URL এনভায়রনমেন্ট ভেরিয়েবল থেকে সরাসরি নেওয়া
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-    fetch(`${API_BASE_URL}/doctors`)
+    fetch(`${API_URL}/doctors`)
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch doctors");
+        if (!res.ok) throw new Error("Failed to fetch");
         return res.json();
       })
       .then((data) => {
-        setDoctors(data.slice(0, 3));
+        // ডাটাবেজের ডাটা সরাসরি ডাইনামিক্যালি হ্যান্ডেল করা
+        setDoctors(data.slice(0, 3)); 
         setLoading(false);
       })
       .catch((err) => {
@@ -28,10 +29,15 @@ const TopDoctors = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[400px] bg-[#f4f7f6]">
-        <span className="loading loading-spinner loading-lg text-slate-700"></span>
+      <div className="flex justify-center items-center min-h-[400px]">
+        <span className="loading loading-spinner loading-lg text-sky-500"></span>
       </div>
     );
+  }
+
+  // যদি কোনো ডাক্তার না পাওয়া যায়
+  if (!loading && doctors.length === 0) {
+    return <p className="text-center py-20 text-slate-500">No doctors available at the moment.</p>;
   }
 
   return (
@@ -44,8 +50,8 @@ const TopDoctors = () => {
           <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mt-4 mb-3 tracking-tight">
             Meet our expert team
           </h1>
-          <p className="text-slate-500 max-w-2xl mx-auto text-sm md:text-base font-normal leading-relaxed">
-            Licensed physicians dedicated to providing comprehensive medical review and individualized prescription decisions
+          <p className="text-slate-500 max-w-2xl mx-auto text-sm md:text-base leading-relaxed">
+            Licensed physicians dedicated to providing comprehensive medical review and individualized prescription decisions.
           </p>
         </div>
 

@@ -1,45 +1,31 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { getUser } from "@/lib/auth"; // আপনার Auth ইউটিলিটি ফাইল থেকে ইম্পোর্ট করুন
+import { authClient } from "@/lib/auth-client"; 
 
 const DashboardOverview = () => {
+  const { data: session, isPending } = authClient.useSession();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
-    // localStorage থেকে ইউজার ডাটা নেওয়া
-    const currentUser = getUser();
-    setUser(currentUser);
-
-    if (!currentUser?.email) {
+    // সেশন থাকলে ডাটা ফেচ করুন
+    if (session?.user) {
+      fetch(`${API_URL}/bookings`) // হেডার বা টোকেন লাগবে না, কুকি অটোমেটিক যাবে
+        .then((res) => res.json())
+        .then((data) => {
+          setBookings(data);
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error("Error fetching dashboard data:", err);
+          setLoading(false);
+        });
+    } else if (!isPending) {
       setLoading(false);
-      return;
     }
-
-    // JWT টোকেন নিয়ে API রিকোয়েস্ট করা
-    const token = localStorage.getItem("docappointToken");
-
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings?email=${currentUser.email}`, {
-      method: "GET",
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}` // JWT টোকেন যোগ করা
-      },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch dashboard data");
-        return res.json();
-      })
-      .then((data) => {
-        setBookings(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching overview bookings:", err);
-        setLoading(false);
-      });
-  }, []);
+  }, [session, isPending, API_URL]);
 
   const totalBookings = bookings.length;
   const pendingBookings = bookings.filter(
@@ -49,15 +35,15 @@ const DashboardOverview = () => {
     (b) => b.status?.toLowerCase() === "approved" || b.status?.toLowerCase() === "completed"
   ).length;
 
-  if (loading) {
+  if (isPending || loading) {
     return (
       <div className="flex justify-center items-center min-h-[50vh]">
-        <span className="loading loading-spinner loading-lg text-slate-700"></span>
+        <span className="loading loading-spinner loading-lg text-sky-500"></span>
       </div>
     );
   }
 
-  if (!user) {
+  if (!session?.user) {
     return <div className="text-center py-10 text-red-500 font-medium">Please log in to view dashboard.</div>;
   }
 
@@ -66,7 +52,7 @@ const DashboardOverview = () => {
       {/* টপ ব্যানার */}
       <div className="bg-white rounded-3xl border border-slate-100 p-6 md:p-8 shadow-sm">
         <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
-          Hello, {user?.name || "Patient"}! 👋
+          Hello, {session.user.name || "Patient"}! 👋
         </h1>
         <p className="text-slate-400 text-sm mt-1.5 max-w-md leading-relaxed">
           Manage your appointments, check your booking status, or update your medical profile details seamlessly.

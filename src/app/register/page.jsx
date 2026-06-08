@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getUser } from "@/lib/auth"; // আপনার Auth ইউটিলিটি ফাইল থেকে getUser ইম্পোর্ট করুন
+import { authClient } from "@/lib/auth-client"; // better-auth client
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -13,13 +13,6 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // JWT এ সেশন চেক করার উপায়
-  useEffect(() => {
-    if (getUser()) {
-      router.push("/home");
-    }
-  }, [router]);
 
   const hasUppercase = /[A-Z]/.test(password);
   const hasLowercase = /[a-z]/.test(password);
@@ -37,36 +30,25 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // API কল করে রেজিস্ট্রেশন সম্পন্ন করা
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      // Better Auth সাইন-আপ
+      await authClient.signUp.email(
+        {
           email,
           password,
           name,
           image: photoUrl || undefined,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.message || "Registration failed.");
-        setLoading(false);
-        return;
-      }
-
-      // রেজিস্ট্রেশন সফল হলে লগইন ডেটা সেভ করা
-      if (data.user && data.token) {
-        localStorage.setItem("docappointUser", JSON.stringify(data.user));
-        localStorage.setItem("docappointToken", data.token);
-      }
-
-      // সাকসেসফুল রেজিস্ট্রেশন পর রিডাইরেক্ট
-      router.push("/home");
-      router.refresh();
-
+        },
+        {
+          onSuccess: () => {
+            router.push("/dashboard");
+            router.refresh();
+          },
+          onError: (ctx) => {
+            setError(ctx.error.message || "Registration failed.");
+            setLoading(false);
+          },
+        }
+      );
     } catch (err) {
       console.error("Registration Error:", err);
       setError("An unexpected error occurred.");
@@ -101,25 +83,24 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {/* Form Fields - Input গুলা আগের মতোই আছে */}
             <div className="bg-white rounded-xl p-2.5 px-4 border-2 border-slate-400 focus-within:border-sky-500 transition-all">
               <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-0.5">Full Name</label>
-              <input type="text" placeholder="John Doe" className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder-slate-400/70" required value={name} onChange={(e) => setName(e.target.value)} />
+              <input type="text" placeholder="John Doe" className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none" required value={name} onChange={(e) => setName(e.target.value)} />
             </div>
 
             <div className="bg-white rounded-xl p-2.5 px-4 border-2 border-slate-400 focus-within:border-sky-500 transition-all">
               <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-0.5">Email Address</label>
-              <input type="email" placeholder="name@example.com" className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder-slate-400/70" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              <input type="email" placeholder="name@example.com" className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
 
             <div className="bg-white rounded-xl p-2.5 px-4 border-2 border-slate-400 focus-within:border-sky-500 transition-all">
-              <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-0.5">Avatar URL (Optional)</label>
-              <input type="url" placeholder="https://example.com/photo.jpg" className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder-slate-400/70" value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)} />
+              <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-0.5">Avatar URL</label>
+              <input type="url" placeholder="https://example.com/photo.jpg" className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none" value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)} />
             </div>
 
             <div className="bg-white rounded-xl p-2.5 px-4 border-2 border-slate-400 focus-within:border-sky-500 transition-all">
               <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-0.5">Password</label>
-              <input type="password" placeholder="••••••••" className="w-full bg-transparent text-sm font-bold text-slate-900 outline-none placeholder-slate-400/70" required value={password} onChange={(e) => setPassword(e.target.value)} />
+              <input type="password" placeholder="••••••••" className="w-full bg-transparent text-sm font-bold text-slate-900 outline-none" required value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
 
             {/* Password Validation */}
@@ -136,17 +117,15 @@ export default function RegisterPage() {
             </div>
 
             <div className="pt-2">
-              <button type="submit" disabled={loading} className="w-full py-3.5 bg-slate-950 text-white rounded-xl font-bold tracking-wide text-sm shadow-md active:scale-[0.98] transition-all hover:bg-slate-900 flex justify-center items-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed">
+              <button type="submit" disabled={loading} className="w-full py-3.5 bg-slate-950 text-white rounded-xl font-bold tracking-wide text-sm shadow-md transition-all hover:bg-slate-900 flex justify-center items-center">
                 {loading ? <span className="loading loading-spinner loading-sm text-white"></span> : "Sign Up"}
               </button>
             </div>
           </form>
 
-          <div className="text-center text-xs font-bold text-slate-500 mt-6 tracking-normal">
+          <div className="text-center text-xs font-bold text-slate-500 mt-6">
             Already have an account?{" "}
-            <Link href="/login" className="text-sky-500 font-extrabold hover:underline transition-all pl-0.5">
-              Sign In
-            </Link>
+            <Link href="/login" className="text-sky-500 font-extrabold hover:underline">Sign In</Link>
           </div>
         </div>
       </div>

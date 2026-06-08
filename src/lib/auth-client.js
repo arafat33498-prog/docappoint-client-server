@@ -1,19 +1,11 @@
 // lib/auth.js
+import { authClient } from "@/lib/auth-client";
 
-export const getUser = () => {
-  if (typeof window === "undefined") return null;
-  const user = localStorage.getItem("docappointUser");
-  return user ? JSON.parse(user) : null;
+// এখন আর localStorage লাগবে না, আমরা authClient এর সেশন ব্যবহার করব
+export const useAuth = () => {
+  return authClient.useSession();
 };
 
-export const setSession = (user, token) => {
-  if (typeof window === "undefined") return;
-  localStorage.setItem("docappointUser", JSON.stringify(user));
-  localStorage.setItem("docappointToken", token);
-};
-
-export const logoutUser = () => {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem("docappointUser");
-  localStorage.removeItem("docappointToken");
+export const logout = async () => {
+  return await authClient.signOut();
 };

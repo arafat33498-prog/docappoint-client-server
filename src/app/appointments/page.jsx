@@ -1,47 +1,49 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import DoctorCard from "@/components/DoctorCard";
 
 const AllAppointments = () => {
   const [doctors, setDoctors] = useState([]);
-  const [filteredDoctors, setFilteredDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("");
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+  // ডাটা ফেচিং
   useEffect(() => {
     fetch(`${API_URL}/doctors`)
       .then((res) => res.json())
       .then((data) => {
         setDoctors(data);
-        setFilteredDoctors(data);
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Error fetching all doctors:", err);
+        console.error("Error fetching doctors:", err);
         setLoading(false);
       });
   }, [API_URL]);
 
-  useEffect(() => {
+  // সার্চ এবং সর্টিং লজিক (useMemo ব্যবহারের ফলে এটি বারবার অযথা রান হবে না)
+  const filteredDoctors = useMemo(() => {
     let result = [...doctors];
 
+    // সার্চ ফিল্টার
     if (searchQuery) {
       result = result.filter((doctor) =>
         doctor.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
+    // সর্টিং লজিক
     if (sortBy === "lowToHigh") {
       result.sort((a, b) => Number(a.fee) - Number(b.fee));
     } else if (sortBy === "highToLow") {
       result.sort((a, b) => Number(b.fee) - Number(a.fee));
     }
 
-    setFilteredDoctors(result);
+    return result;
   }, [searchQuery, sortBy, doctors]);
 
   if (loading) {
@@ -55,6 +57,7 @@ const AllAppointments = () => {
   return (
     <section className="bg-[#f4f7f6] min-h-screen py-16 px-4">
       <div className="max-w-7xl mx-auto w-full">
+        {/* হেডার */}
         <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">
             All Available Appointments
@@ -64,8 +67,9 @@ const AllAppointments = () => {
           </p>
         </div>
 
+        {/* সার্চ এবং সর্ট বার */}
         <div className="flex flex-col md:flex-row gap-6 justify-between items-center bg-white p-6 rounded-3xl shadow-[0_15px_40px_-20px_rgba(0,0,0,0.05)] border border-slate-100 mb-10">
-          <div className="relative w-full md:max-w-lg p-[2px] rounded-full bg-gradient-to-r from-sky-400 via-blue-500 to-cyan-400 shadow-sm transition-all duration-300 focus-within:shadow-md">
+          <div className="relative w-full md:max-w-lg p-[2px] rounded-full bg-gradient-to-r from-sky-400 via-blue-500 to-cyan-400 shadow-sm">
             <div className="flex items-center bg-white rounded-full px-5 py-3 w-full">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 text-sky-500">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.602 10.602z" />
@@ -93,6 +97,7 @@ const AllAppointments = () => {
           </div>
         </div>
 
+        {/* ডাক্তার লিস্ট */}
         {filteredDoctors.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredDoctors.map((doctor) => (
@@ -102,7 +107,7 @@ const AllAppointments = () => {
         ) : (
           <div className="text-center py-20 bg-white rounded-3xl shadow-sm border border-slate-100">
             <p className="text-xl font-medium text-slate-400">
-              No doctors found with the name "{searchQuery}"
+              No doctors found matching "{searchQuery}"
             </p>
           </div>
         )}
