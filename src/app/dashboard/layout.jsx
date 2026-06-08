@@ -1,25 +1,22 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { getUser, logoutUser } from '@/lib/auth'; 
+import { authClient } from "@/lib/auth-client"; // আপনার কনফিগার করা ক্লায়েন্ট
 
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  
+  // better-auth এর সেশন হুক
+  const { data: session, isPending } = authClient.useSession();
 
   useEffect(() => {
-    // লোকাল স্টোরেজ থেকে ইউজার চেক করা
-    const currentUser = getUser();
-    if (!currentUser) {
+    // লোডিং শেষ হওয়ার পর চেক করুন ইউজার আছে কি না
+    if (!isPending && !session) {
       router.push("/login");
-    } else {
-      setUser(currentUser);
-      setLoading(false);
     }
-  }, [router]);
+  }, [session, isPending, router]);
 
   const getInitial = (name) => {
     return name ? name.charAt(0).toUpperCase() : 'U';
@@ -31,12 +28,13 @@ export default function DashboardLayout({ children }) {
     { name: "My Profile", path: "/dashboard/my-profile", icon: "👤" }, 
   ];
 
-  if (loading) return null; // অথবা একটি স্পিনার দেখাতে পারেন
+  // যতক্ষণ সেশন চেক হচ্ছে, ততক্ষণ কিছুই রেন্ডার না করা ভালো
+  if (isPending) return null; 
 
   return (
     <div className="flex bg-[#f4f7f6] min-h-screen text-slate-800">
       
-      {/* ─── সাইডবার (Sidebar) ─── */}
+      {/* ─── সাইডবার ─── */}
       <aside className="w-64 bg-white border-r border-slate-200/60 hidden md:flex flex-col justify-between p-6 shrink-0">
         <div>
           <div className="mb-10 px-2">
@@ -65,7 +63,7 @@ export default function DashboardLayout({ children }) {
 
         <div className="pt-6 border-t border-slate-100">
           <button 
-            onClick={logoutUser}
+            onClick={() => authClient.signOut()} // সরাসরি এখান থেকে সাইন আউট
             className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
           >
             🚪 <span>Logout</span>
@@ -73,9 +71,8 @@ export default function DashboardLayout({ children }) {
         </div>
       </aside>
 
-      {/* ─── মেইন কন্টেন্ট এরিয়া ─── */}
+      {/* ─── মেইন কন্টেন্ট ─── */}
       <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
-        
         <header className="h-16 bg-white border-b border-slate-200/60 flex items-center justify-between px-6 md:px-10 shrink-0">
           <div className="md:hidden font-bold text-lg text-slate-900">
             Doc<span className="text-sky-500">Appoint</span>
@@ -83,15 +80,15 @@ export default function DashboardLayout({ children }) {
           
           <div className="flex items-center gap-3 ml-auto">
             <div className="text-right hidden sm:block">
-              <p className="text-xs font-semibold text-slate-800">{user?.name}</p>
+              <p className="text-xs font-semibold text-slate-800">{session?.user?.name}</p>
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Patient</p>
             </div>
             
-            <div className="w-9 h-9 rounded-full bg-slate-900 border border-slate-200 flex items-center justify-center text-white font-bold text-sm overflow-hidden shadow-sm select-none">
-              {user?.image ? (
-                <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
+            <div className="w-9 h-9 rounded-full bg-slate-900 border border-slate-200 flex items-center justify-center text-white font-bold text-sm overflow-hidden shadow-sm">
+              {session?.user?.image ? (
+                <img src={session.user.image} alt={session.user.name} className="w-full h-full object-cover" />
               ) : (
-                <span>{getInitial(user?.name)}</span>
+                <span>{getInitial(session?.user?.name)}</span>
               )}
             </div>
           </div>
