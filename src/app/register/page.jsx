@@ -3,10 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { authClient } from "@/lib/auth-client"; // better-auth client
+import { authClient } from "@/lib/auth-client";
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
@@ -30,7 +29,6 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // Better Auth সাইন-আপ
       await authClient.signUp.email(
         {
           email,
@@ -40,8 +38,9 @@ export default function RegisterPage() {
         },
         {
           onSuccess: () => {
-            router.push("/dashboard");
-            router.refresh();
+            // রিডাইরেক্ট হওয়ার সমস্যা সমাধানের জন্য window.location.href ব্যবহার করা হয়েছে
+            // এটি ব্রাউজারের সেশন কুকি রিফ্রেশ নিশ্চিত করে
+            window.location.href = "/dashboard";
           },
           onError: (ctx) => {
             setError(ctx.error.message || "Registration failed.");
@@ -103,7 +102,6 @@ export default function RegisterPage() {
               <input type="password" placeholder="••••••••" className="w-full bg-transparent text-sm font-bold text-slate-900 outline-none" required value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
 
-            {/* Password Validation */}
             <div className="px-2 pt-0.5 space-y-1">
               <p className={`text-[11px] font-bold tracking-wide transition-colors flex items-center gap-1.5 ${isLongEnough ? "text-emerald-600" : "text-rose-500"}`}>
                 <span>{isLongEnough ? "✓" : "•"}</span> Minimum 6 characters
